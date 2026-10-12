@@ -108,14 +108,14 @@ export default function Layout({ children }) {
       </a>
 
       {/* Masaüstü kenar menü */}
-      <aside className="sticky top-0 hidden h-screen w-64 flex-none flex-col bg-ink px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-screen print:!hidden w-64 flex-none flex-col bg-ink px-4 py-5 lg:flex">
         <Brand />
         <nav className="mt-8 flex-1 overflow-y-auto" aria-label="Ana menü"><NavList /></nav>
         <UserBox />
       </aside>
 
       {/* Mobil/tablet üst çubuk */}
-      <header className="sticky top-0 z-30 flex items-center justify-between bg-ink px-4 py-3 lg:hidden">
+      <header className="sticky top-0 z-30 flex items-center justify-between bg-ink px-4 py-3 lg:hidden print:hidden">
         <Brand />
         <button type="button" onClick={() => setOpen(true)} className="rounded-md p-2 text-white hover:bg-white/10"
           aria-label="Menüyü aç" aria-expanded={open}>
@@ -138,7 +138,7 @@ export default function Layout({ children }) {
         </div>
       )}
 
-      <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
+      <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-9 print:p-0">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
     </div>

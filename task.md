@@ -26,8 +26,8 @@ PRD §4.1 — tamamlandıkça işaretle:
 - [x] Toast / Snackbar bildirimleri
 - [x] Admin: kullanıcı ekle / düzenle / sil veya pasife al / şifre yönetimi
 - [ ] Dashboard: toplam cihaz, arızalı, boşta (depoda) — gerçek veri
-- [ ] Cihaz CRUD (marka, model, seri no, alım tarihi vb.)
-- [ ] Otomatik benzersiz QR kod / barkod
+- [x] Cihaz CRUD (marka, model, seri no, alım tarihi vb.)
+- [x] Otomatik benzersiz QR kod / barkod
 - [ ] Zimmet teslim ve iade; geçmiş kayıtlar korunur
 - [ ] İş kuralı: aynı cihaz aynı anda iki aktif zimmette olamaz
 - [ ] İade sonrası cihaz IN_STOCK (boşta/depoda) ve yeniden zimmetlenebilir
@@ -53,9 +53,9 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 - [x] Giriş
 - [ ] Admin dashboard
-- [ ] Cihaz listesi (arama, filtre, sayfalama)
-- [ ] Cihaz ekle / düzenle
-- [ ] Cihaz detay (QR + geçmiş)
+- [x] Cihaz listesi (arama, filtre, sayfalama)
+- [x] Cihaz ekle / düzenle
+- [x] Cihaz detay (QR + geçmiş)
 - [x] Kullanıcı listesi ve düzenleme (Admin)
 - [ ] Zimmet teslim
 - [ ] Zimmet iade
@@ -152,18 +152,18 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 ### Backend
 
-- [ ] Assets CRUD; pasife alma (`is_active`)
-- [ ] Otomatik `asset_code` üretimi
-- [ ] QR üretimi (görsel veya `/assets/by-code/:code` URL)
-- [ ] Liste: pagination, search, sort
-- [ ] Filtre: status, department, kullanıcı (zimmet ilişkisi)
+- [x] Assets CRUD; pasife alma (`is_active`)
+- [x] Otomatik `asset_code` üretimi
+- [x] QR üretimi (görsel veya `/assets/by-code/:code` URL)
+- [x] Liste: pagination, search, sort
+- [x] Filtre: status, department, kullanıcı (zimmet ilişkisi)
 
 ### Frontend
 
-- [ ] Cihaz listesi tablosu
-- [ ] Ekle / düzenle formu + client validasyon
-- [ ] Cihaz detay + QR gösterimi
-- [ ] Sadece Admin envanter CRUD
+- [x] Cihaz listesi tablosu
+- [x] Ekle / düzenle formu + client validasyon
+- [x] Cihaz detay + QR gösterimi
+- [x] Sadece Admin envanter CRUD
 
 **Test notu (PRD §7):** Aynı seri no veya asset_code ile ikinci kayıt reddedilir; QR doğru cihaza gider.
 
@@ -317,3 +317,11 @@ Her aşama bittiğinde doldur:
 - **Doğrulama:** 23 otomatik test geçti (standart kullanıcı tüm admin uçlarında 403, hatalı parola 401, rate limit 429, CSRF 415, SQL enjeksiyon denemesi, mükerrer e-posta 409 vb.). Ekran görüntüleri masaüstü + mobilde alındı.
 - **Kalan:** —
 - **Sıradaki adım:** Aşama 4 — Envanter ve QR kod
+
+### Aşama 4
+
+- **Tamamlanan:** Cihaz CRUD + pasife alma, durum değişikliği (Arızalı ↔ Depoda; `ACTIVE` yalnızca zimmetle oluşur), `IT-YYYY-NNNNNN` kod üretimi (sequence), QR (PNG/SVG, indirme, içerik `APP_BASE_URL/assets/code/<kod>`), liste: arama (kod/seri/marka/model/kişi) + çoklu durum + kategori + departman + kullanıcı + aktiflik filtresi, beyaz listeli sıralama, sayfalama. Personel yalnızca kendi zimmetindeki cihazı görür (diğerleri 404, yönetici notu gizli). Arayüz: cihaz listesi (mobilde kart), ekle/düzenle formu (istemci doğrulaması), cihaz detayı (kimde, bilgiler, QR, etiket yazdırma, işlem menüsü), `/assets/code/:kod` QR hedefi.
+- **Karar:** Seri numaraları büyük harfe çevrilerek saklanır; böylece `abc-123` ve `ABC-123` aynı cihaz sayılır.
+- **Doğrulama:** 11 yeni test (mükerrer seri no/kod 409, form doğrulaması, arama+filtre+sayfalama, departman/kullanıcı filtresi, personel yetki sınırı, QR → doğru cihaz) — toplam 34 test geçti.
+- **Kalan:** —
+- **Sıradaki adım:** Aşama 5 — Zimmet ve log altyapısı

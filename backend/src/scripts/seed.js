@@ -154,7 +154,7 @@ async function seedDemo(client, adminId, log) {
     await client.query(
       `INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, "timestamp", details)
        VALUES ($1, 'ASSIGN', 'ASSET', $2, $3, $4)`,
-      [adminId, assetIds[assetIdx], at, { user_id: userIds[userIdx % userIds.length], seed: true }],
+      [adminId, assetIds[assetIdx], at, { user_id: userIds[userIdx % userIds.length], user_name: PEOPLE[userIdx % userIds.length][0], seed: true }],
     );
   }
 
@@ -171,9 +171,20 @@ async function seedDemo(client, adminId, log) {
     [back, adminId, assetIds[9]],
   );
   await client.query(`UPDATE assets SET status_changed_at = $2 WHERE id = $1`, [assetIds[9], back]);
+  await client.query(
+    `INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, "timestamp", details)
+     VALUES ($1, 'ASSIGN', 'ASSET', $2, $3, $4), ($1, 'RETURN', 'ASSET', $2, $5, $6)`,
+    [adminId, assetIds[9], out, { user_id: userIds[1], user_name: PEOPLE[1][0], seed: true },
+      back, { user_id: userIds[1], user_name: PEOPLE[1][0], condition: 'IN_STOCK', return_note: 'Personel değişikliği', seed: true }],
+  );
 
   for (const idx of [5, 13]) {
     await client.query(`UPDATE assets SET status = 'DEFECTIVE', status_changed_at = $2 WHERE id = $1`, [assetIds[idx], daysAgo(15)]);
+    await client.query(
+      `INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, "timestamp", details)
+       VALUES ($1, 'ASSET_STATUS_CHANGE', 'ASSET', $2, $3, $4)`,
+      [adminId, assetIds[idx], daysAgo(15), { changes: { status: { from: 'IN_STOCK', to: 'DEFECTIVE' } }, note: 'Açılmıyor', seed: true }],
+    );
   }
 
   log(`[seed] Örnek veri yüklendi: ${DEPARTMENTS.length} departman, ${userIds.length} personel (parola: ${demoPassword}), ${assetIds.length} cihaz.`);

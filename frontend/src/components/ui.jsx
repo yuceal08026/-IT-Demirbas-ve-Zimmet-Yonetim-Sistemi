@@ -86,8 +86,9 @@ export function ErrorBlock({ error, onRetry }) {
 
 // ---------- Form alanları ----------
 
-export function Field({ label, error, hint, children, className = '' }) {
-  const id = useId();
+export function Field({ label, error, hint, children, className = '', id: fixedId }) {
+  const generatedId = useId();
+  const id = fixedId || generatedId;
   const child = typeof children === 'function' ? children({ id, invalid: Boolean(error), describedBy: `${id}-msg` }) : children;
   return (
     <div className={className}>

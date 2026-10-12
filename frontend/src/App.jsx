@@ -5,6 +5,9 @@ import { Spinner } from './components/ui.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
 import DepartmentsPage from './pages/DepartmentsPage.jsx';
+import AssetsPage from './pages/AssetsPage.jsx';
+import AssetFormPage from './pages/AssetFormPage.jsx';
+import AssetDetailPage from './pages/AssetDetailPage.jsx';
 import { ForbiddenPage, NotFoundPage } from './pages/StatusPages.jsx';
 
 /**
@@ -15,6 +18,12 @@ const ROUTES = [
   { path: '/', admin: true, element: () => <Redirect to="/users" /> },
   { path: '/users', admin: true, element: () => <UsersPage /> },
   { path: '/departments', admin: true, element: () => <DepartmentsPage /> },
+  { path: '/assets', admin: true, element: () => <AssetsPage /> },
+  { path: '/assets/new', admin: true, element: () => <AssetFormPage /> },
+  { path: '/assets/code/:code', element: ({ code }) => <AssetDetailPage code={code} key={code} /> },
+  { path: '/assets/:id/edit', admin: true, element: ({ id }) => <AssetFormPage id={id} key={id} /> },
+  // Personel de yalnızca kendi zimmetindeki cihazın detayını görebilir (backend 404 döner).
+  { path: '/assets/:id', element: ({ id }) => <AssetDetailPage id={id} key={id} /> },
   { path: '/my-assets', element: () => <ForbiddenPage /> },
 ];
 
