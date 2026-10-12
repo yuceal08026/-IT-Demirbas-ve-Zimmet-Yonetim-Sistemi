@@ -21,11 +21,11 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 - [x] Login / Logout
 - [x] JWT oturum yönetimi; parolalar bcrypt/hash ile saklanır
-- [ ] Responsive arayüz (masaüstü, tablet, mobil)
-- [ ] Listelerde sayfalama, arama, sıralama
+- [x] Responsive arayüz (masaüstü, tablet, mobil)
+- [x] Listelerde sayfalama, arama, sıralama
 - [x] Toast / Snackbar bildirimleri
 - [x] Admin: kullanıcı ekle / düzenle / sil veya pasife al / şifre yönetimi
-- [ ] Dashboard: toplam cihaz, arızalı, boşta (depoda) — gerçek veri
+- [x] Dashboard: toplam cihaz, arızalı, boşta (depoda) — gerçek veri
 - [x] Cihaz CRUD (marka, model, seri no, alım tarihi vb.)
 - [x] Otomatik benzersiz QR kod / barkod
 - [x] Zimmet teslim ve iade; geçmiş kayıtlar korunur
@@ -52,7 +52,7 @@ PRD §4.1 — tamamlandıkça işaretle:
 ## Önerilen ekranlar
 
 - [x] Giriş
-- [ ] Admin dashboard
+- [x] Admin dashboard
 - [x] Cihaz listesi (arama, filtre, sayfalama)
 - [x] Cihaz ekle / düzenle
 - [x] Cihaz detay (QR + geçmiş)
@@ -196,12 +196,12 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 **Tamamlanma ölçütü:** İstatistikler DB ile tutarlı; arayüz mobil/tablet/masaüstünde kullanılabilir.
 
-- [ ] Dashboard API: COUNT toplam, DEFECTIVE, IN_STOCK (gerçek sorgular)
-- [ ] Admin dashboard kartları
-- [ ] Ana layout: navigasyon, mobil menü
-- [ ] Responsive tablolar ve formlar
-- [ ] Global toast/snackbar; loading ve empty state
-- [ ] Tüm listelerde pagination + arama tutarlılığı
+- [x] Dashboard API: COUNT toplam, DEFECTIVE, IN_STOCK (gerçek sorgular)
+- [x] Admin dashboard kartları
+- [x] Ana layout: navigasyon, mobil menü
+- [x] Responsive tablolar ve formlar
+- [x] Global toast/snackbar; loading ve empty state
+- [x] Tüm listelerde pagination + arama tutarlılığı
 
 **Test notu (PRD §7):** Dashboard sayıları DB ile birebir; arama + filtre + sayfalama birlikte çalışır.
 
@@ -332,3 +332,10 @@ Her aşama bittiğinde doldur:
 - **Doğrulama:** 10 yeni test — aynı cihaza 8 eşzamanlı zimmet isteğinden yalnızca 1'i başarılı; iade sonrası yeniden zimmet; geçmiş korunuyor; personel 403 / IDOR koruması; audit ve zimmet kayıtları SQL ile bile silinemiyor. Toplam 44 test geçti. Arayüzde uçtan uca zimmet → iade akışı denendi.
 - **Kalan:** —
 - **Sıradaki adım:** Aşama 6 — Dashboard ve responsive UI
+
+### Aşama 6
+
+- **Tamamlanan:** `GET /api/dashboard/stats` (canlı `COUNT ... FILTER` sorguları, önbellek yok; kategori ve departman dağılımı, son cihaz hareketleri, uyarı özeti). Dashboard: toplam cihaz + Zimmetli/Depoda/Arızalı oran bandı (her parça filtreli listeye gider), dikkat gerektirenler, son hareketler, kategoriye göre yığılmış çubuk (tablo görünümü ile), departmanlara göre zimmet. Grafik renkleri renk körlüğü doğrulayıcısından geçirildi (ilk durum renkleri başarısız olduğu için ayrı bir grafik seti seçildi). Mobil menü, mobilde tablo → kart dönüşümü, yükleniyor/boş durumları tüm listelerde.
+- **Doğrulama:** Dashboard sayıları her işlemden (ekleme, arıza, zimmet, pasife alma, arızalı iade) sonra doğrudan SQL sayımıyla birebir karşılaştırıldı; `toplam = zimmetli + depoda + arızalı` her adımda doğru. Masaüstü, tablet ve mobil ekran görüntüleri alındı.
+- **Kalan:** —
+- **Sıradaki adım:** Aşama 7 — İleri özellikler ve testler

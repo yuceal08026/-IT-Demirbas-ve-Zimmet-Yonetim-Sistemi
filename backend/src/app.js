@@ -13,6 +13,8 @@ import assetsRouter from './routes/assets.js';
 import assignmentsRouter from './routes/assignments.js';
 import meRouter from './routes/me.js';
 import auditLogsRouter from './routes/auditLogs.js';
+import dashboardRouter from './routes/dashboard.js';
+import alertsRouter from './routes/alerts.js';
 
 export function createApp() {
   const app = express();
@@ -40,6 +42,8 @@ export function createApp() {
   app.use('/api/assignments', assignmentsRouter);
   app.use('/api/me', meRouter);
   app.use('/api/audit-logs', auditLogsRouter);
+  app.use('/api/dashboard', dashboardRouter);
+  app.use('/api/alerts', alertsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

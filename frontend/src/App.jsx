@@ -11,6 +11,8 @@ import AssetDetailPage from './pages/AssetDetailPage.jsx';
 import AssignmentsPage from './pages/AssignmentsPage.jsx';
 import MyAssetsPage from './pages/MyAssetsPage.jsx';
 import AuditPage from './pages/AuditPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import AlertsPage from './pages/AlertsPage.jsx';
 import { ForbiddenPage, NotFoundPage } from './pages/StatusPages.jsx';
 
 /**
@@ -18,7 +20,8 @@ import { ForbiddenPage, NotFoundPage } from './pages/StatusPages.jsx';
  * Bu kontrol yalnızca arayüz içindir; aynı uçlar backend'de requireRole('ADMIN') ile korunur.
  */
 const ROUTES = [
-  { path: '/', admin: true, element: () => <Redirect to="/users" /> },
+  { path: '/', admin: true, element: () => <DashboardPage /> },
+  { path: '/alerts', admin: true, element: () => <AlertsPage /> },
   { path: '/users', admin: true, element: () => <UsersPage /> },
   { path: '/departments', admin: true, element: () => <DepartmentsPage /> },
   { path: '/assets', admin: true, element: () => <AssetsPage /> },

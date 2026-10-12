@@ -25,6 +25,12 @@
   --color-st-defect-tint: #fbe9e7;
   --color-warn: #8a5a00;
   --color-warn-tint: #fdf3dc;
+
+  /* Grafik dolguları — renk körlüğü doğrulamasından geçen ayrı set (rozet metin renklerinden farklı). */
+  --color-chart-active: #178a5e;
+  --color-chart-stock: #6b8fd6;
+  --color-chart-defect: #c0392b;
+  --color-chart-single: #1e4fa3;
 }
 
 @layer base {
