@@ -46,4 +46,7 @@ export function assertSecurityConfig() {
       'JWT_SECRET tanımlı değil veya 32 karakterden kısa. .env dosyasını kontrol edin (bkz. .env.example).',
     );
   }
+  if (!/^\d+\s*[smhd]?$/i.test(String(config.jwt.expiresIn).trim())) {
+    throw new Error('JWT_EXPIRES_IN geçersiz. Örnek değerler: 30m, 8h, 1d');
+  }
 }

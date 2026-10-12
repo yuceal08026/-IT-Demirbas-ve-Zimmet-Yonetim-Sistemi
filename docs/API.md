@@ -35,6 +35,10 @@ Ortak sorgu parametreleri: `page` (≥1, varsayılan 1), `limit` (1–100, varsa
 | 409 | `HAS_ACTIVE_ASSIGNMENTS` | Zimmetli cihaz/kullanıcıyı silme, pasife alma, durum değiştirme |
 | 409 | `HAS_HISTORY` | Geçmişi olan kaydı fiziksel silme (pasife alma önerilir) |
 | 409 | `CANNOT_MODIFY_SELF` | Admin'in kendini silmesi / pasife alması / rolünü düşürmesi |
+| 409 | `LAST_ADMIN` | Son aktif yöneticinin pasife alınması / silinmesi / rolünün düşürülmesi |
+| 409 | `HAS_USERS` | Personeli olan departmanın silinmesi |
+| 413 | `PAYLOAD_TOO_LARGE` | 100 KB'tan büyük gövde |
+| 415 | `UNSUPPORTED_MEDIA_TYPE` | POST/PATCH gövdesi `application/json` değil (CSRF koruması) |
 | 429 | `TOO_MANY_REQUESTS` | Login rate limit |
 | 500 | `INTERNAL_ERROR` | Beklenmeyen hata (ayrıntı istemciye dönülmez) |
 
@@ -50,8 +54,8 @@ Ortak sorgu parametreleri: `page` (≥1, varsayılan 1), `limit` (1–100, varsa
 
 | Metot | Yol | Yetki | Gövde / Yanıt |
 |-------|-----|-------|---------------|
-| POST | `/api/auth/login` | Herkes (rate limited) | `{email, password}` → `200 {user, token, expiresIn}` + `httpOnly` cookie. Pasif kullanıcı → `401 INVALID_CREDENTIALS` |
-| POST | `/api/auth/logout` | Auth | Cookie temizlenir → `204` |
+| POST | `/api/auth/login` | Herkes (rate limited) | `{email, password, issueToken?}` → `200 {user, expiresIn}` + `httpOnly` cookie. `issueToken: true` (mobil/API istemcisi) gönderilirse yanıta `token` da eklenir; web istemcisi token'ı hiç görmez. Pasif kullanıcı → `401 INVALID_CREDENTIALS` |
+| POST | `/api/auth/logout` | Herkes (idempotent) | Cookie temizlenir → `204` |
 | GET | `/api/auth/me` | Auth | `{id, ad_soyad, email, role, department}` |
 
 `user` nesnesi hiçbir yanıtta `password_hash` veya `token_version` içermez.

@@ -4,7 +4,11 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import { config } from './config.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { requireJsonBody } from './middleware/auth.js';
 import healthRouter from './routes/health.js';
+import authRouter from './routes/auth.js';
+import usersRouter from './routes/users.js';
+import departmentsRouter from './routes/departments.js';
 
 export function createApp() {
   const app = express();
@@ -23,6 +27,11 @@ export function createApp() {
   }
 
   app.use('/health', healthRouter);
+
+  app.use('/api', requireJsonBody);
+  app.use('/api/auth', authRouter);
+  app.use('/api/users', usersRouter);
+  app.use('/api/departments', departmentsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

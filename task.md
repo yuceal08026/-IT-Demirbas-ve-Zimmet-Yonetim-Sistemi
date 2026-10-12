@@ -19,12 +19,12 @@
 
 PRD §4.1 — tamamlandıkça işaretle:
 
-- [ ] Login / Logout
-- [ ] JWT oturum yönetimi; parolalar bcrypt/hash ile saklanır
+- [x] Login / Logout
+- [x] JWT oturum yönetimi; parolalar bcrypt/hash ile saklanır
 - [ ] Responsive arayüz (masaüstü, tablet, mobil)
 - [ ] Listelerde sayfalama, arama, sıralama
-- [ ] Toast / Snackbar bildirimleri
-- [ ] Admin: kullanıcı ekle / düzenle / sil veya pasife al / şifre yönetimi
+- [x] Toast / Snackbar bildirimleri
+- [x] Admin: kullanıcı ekle / düzenle / sil veya pasife al / şifre yönetimi
 - [ ] Dashboard: toplam cihaz, arızalı, boşta (depoda) — gerçek veri
 - [ ] Cihaz CRUD (marka, model, seri no, alım tarihi vb.)
 - [ ] Otomatik benzersiz QR kod / barkod
@@ -51,12 +51,12 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 ## Önerilen ekranlar
 
-- [ ] Giriş
+- [x] Giriş
 - [ ] Admin dashboard
 - [ ] Cihaz listesi (arama, filtre, sayfalama)
 - [ ] Cihaz ekle / düzenle
 - [ ] Cihaz detay (QR + geçmiş)
-- [ ] Kullanıcı listesi ve düzenleme (Admin)
+- [x] Kullanıcı listesi ve düzenleme (Admin)
 - [ ] Zimmet teslim
 - [ ] Zimmet iade
 - [ ] Personel — zimmetlerim
@@ -108,14 +108,14 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 **Tamamlanma ölçütü:** Frontend ve backend yerelde çalışır; veritabanı bağlantısı doğrulanır.
 
-- [ ] Klasör yapısı: `frontend/` + `backend/` (veya monorepo — seçimi README’de yaz)
-- [ ] Backend: Express, PostgreSQL bağlantısı
-- [ ] Frontend: Vite + React; Tailwind veya Bootstrap
-- [ ] `.env.example`, `.gitignore` (`.env`, node_modules, build)
-- [ ] `GET /health` (isteğe bağlı DB ping)
-- [ ] Git deposu başlat
-- [ ] Docker Compose: PostgreSQL servisi (api/web Aşama 8’de tamamlanır)
-- [ ] README iskeleti (kurulum başlıkları)
+- [x] Klasör yapısı: `frontend/` + `backend/` (veya monorepo — seçimi README’de yaz)
+- [x] Backend: Express, PostgreSQL bağlantısı
+- [x] Frontend: Vite + React; Tailwind veya Bootstrap
+- [x] `.env.example`, `.gitignore` (`.env`, node_modules, build)
+- [x] `GET /health` (isteğe bağlı DB ping)
+- [x] Git deposu başlat
+- [x] Docker Compose: PostgreSQL servisi (api/web Aşama 8’de tamamlanır)
+- [x] README iskeleti (kurulum başlıkları)
 
 **Test notu:** `health` 200; FE dev server açılır; DB migration/connection hatasız.
 
@@ -127,20 +127,20 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 ### Backend
 
-- [ ] Migration: Users, Departments
-- [ ] Seed: en az bir ADMIN kullanıcı
-- [ ] Login → JWT; logout (client + opsiyonel blacklist yoksa dokümante et)
-- [ ] bcrypt ile password_hash
-- [ ] Middleware: authenticate, requireAdmin
-- [ ] Admin: kullanıcı listele, oluştur, güncelle, pasifle/sil, şifre sıfırla
+- [x] Migration: Users, Departments
+- [x] Seed: en az bir ADMIN kullanıcı
+- [x] Login → JWT; logout (client + opsiyonel blacklist yoksa dokümante et)
+- [x] bcrypt ile password_hash
+- [x] Middleware: authenticate, requireAdmin
+- [x] Admin: kullanıcı listele, oluştur, güncelle, pasifle/sil, şifre sıfırla
 
 ### Frontend
 
-- [ ] Login / Logout sayfası
-- [ ] Token saklama stratejisi (header veya httpOnly cookie — dokümante)
-- [ ] Korunan route’lar; Admin-only sayfalar
-- [ ] Kullanıcı yönetim paneli (rol, departman, aktif)
-- [ ] Hata/başarı toast
+- [x] Login / Logout sayfası
+- [x] Token saklama stratejisi (header veya httpOnly cookie — dokümante)
+- [x] Korunan route’lar; Admin-only sayfalar
+- [x] Kullanıcı yönetim paneli (rol, departman, aktif)
+- [x] Hata/başarı toast
 
 **Test notu (PRD §7):** Standart USER admin endpoint’lerinde 403; hatalı parola ile giriş reddedilir.
 
@@ -301,4 +301,19 @@ Her aşama bittiğinde doldur:
 
 - **Tamamlanan:** `docs/ERD.md` (Mermaid ERD, durum makinesi, FK/indeks planı), `docs/schema.sql` (PostgreSQL 16'da kurulup kısıtlar test edildi: mükerrer seri no/e-posta, çakışan zimmet, iade sonrası yeniden zimmet, audit log değiştirilemezliği), `docs/API.md`, `docs/PERMISSIONS.md`, `docs/SECURITY.md`
 - **Kalan:** Tasarım onayı (veya revizyon)
-- **Sıradaki adım:** Onay sonrası Aşama 2 — proje kurulumu ve sağlık kontrolü
+- **Sıradaki adım:** Aşama 2 ✓ (tasarım onaylandı)
+
+### Aşama 2
+
+- **Tamamlanan:** `backend/` (Express 5, pg havuzu, transaction yardımcısı, bağımlılıksız migration aracı, merkezi hata yönetimi, `GET /health` + DB ping), `frontend/` (Vite + React 19 + Tailwind v4, tasarım belirteçleri, bağımlılıksız router, API istemcisi, toast), `.env.example` (kök + backend), `.gitignore`, `docker-compose.yml` (postgres), README iskeleti, git deposu. Seçim: ayrı `backend/` + `frontend/` klasörleri (README'de yazıyor).
+- **Doğrulama:** `/health` → 200 `{status:ok, db:ok}`; bilinmeyen yol → JSON 404; 32 karakterden kısa `JWT_SECRET` ile API başlamıyor.
+- **Kalan:** —
+- **Sıradaki adım:** Aşama 3 — Auth ve kullanıcı yönetimi
+
+### Aşama 3
+
+- **Tamamlanan:** Migration'lar (`001` kullanıcı/departman/audit, `002` cihaz, `003` zimmet — Aşama 1'de onaylanan şemanın tamamı; kullanıcı silme/pasife alma kuralları zimmet tablosuna baktığı için birlikte eklendi), seed (admin + isteğe bağlı örnek veri), JWT login/logout/me, httpOnly + SameSite=Strict cookie, mobil için `issueToken`, `token_version` ile anında oturum iptali, `authenticate` / `requireAdmin` / `requireJsonBody` / login rate limit, kullanıcı ve departman API'leri (arama, filtre, sıralama, sayfalama), son yönetici ve kendini değiştirme korumaları. Arayüz: giriş, kenar menülü layout (mobil açılır menü), Personel ve Departmanlar sayfaları, toast, 403/404 sayfaları.
+- **Token stratejisi:** Web'de token httpOnly cookie'de (JS erişemez); logout cookie'yi siler; şifre sıfırlama / pasife alma / rol değişimi `token_version`'ı artırıp tüm eski token'ları geçersiz kılar (blacklist gerekmez). Ayrıntı: `docs/SECURITY.md`.
+- **Doğrulama:** 23 otomatik test geçti (standart kullanıcı tüm admin uçlarında 403, hatalı parola 401, rate limit 429, CSRF 415, SQL enjeksiyon denemesi, mükerrer e-posta 409 vb.). Ekran görüntüleri masaüstü + mobilde alındı.
+- **Kalan:** —
+- **Sıradaki adım:** Aşama 4 — Envanter ve QR kod
