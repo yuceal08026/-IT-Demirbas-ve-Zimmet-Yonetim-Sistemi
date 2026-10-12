@@ -28,11 +28,11 @@ PRD §4.1 — tamamlandıkça işaretle:
 - [ ] Dashboard: toplam cihaz, arızalı, boşta (depoda) — gerçek veri
 - [x] Cihaz CRUD (marka, model, seri no, alım tarihi vb.)
 - [x] Otomatik benzersiz QR kod / barkod
-- [ ] Zimmet teslim ve iade; geçmiş kayıtlar korunur
-- [ ] İş kuralı: aynı cihaz aynı anda iki aktif zimmette olamaz
-- [ ] İade sonrası cihaz IN_STOCK (boşta/depoda) ve yeniden zimmetlenebilir
-- [ ] Filtre: durum (ACTIVE, DEFECTIVE, IN_STOCK), departman, kullanıcı
-- [ ] Personel: sadece kendi zimmetleri ve yetkili cihaz detayı
+- [x] Zimmet teslim ve iade; geçmiş kayıtlar korunur
+- [x] İş kuralı: aynı cihaz aynı anda iki aktif zimmette olamaz
+- [x] İade sonrası cihaz IN_STOCK (boşta/depoda) ve yeniden zimmetlenebilir
+- [x] Filtre: durum (ACTIVE, DEFECTIVE, IN_STOCK), departman, kullanıcı
+- [x] Personel: sadece kendi zimmetleri ve yetkili cihaz detayı
 
 ---
 
@@ -57,10 +57,10 @@ PRD §4.1 — tamamlandıkça işaretle:
 - [x] Cihaz ekle / düzenle
 - [x] Cihaz detay (QR + geçmiş)
 - [x] Kullanıcı listesi ve düzenleme (Admin)
-- [ ] Zimmet teslim
-- [ ] Zimmet iade
-- [ ] Personel — zimmetlerim
-- [ ] İşlem geçmişi / audit (Admin)
+- [x] Zimmet teslim
+- [x] Zimmet iade
+- [x] Personel — zimmetlerim
+- [x] İşlem geçmişi / audit (Admin)
 - [ ] (Faz 2) Uyarı merkezi, bakım, raporlama
 
 ---
@@ -175,18 +175,18 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 ### Backend
 
-- [ ] Assign: uygun status (ör. IN_STOCK), `assigned_by`, `assigned_at`
-- [ ] Return: `returned_at`, asset → IN_STOCK
-- [ ] Aktif zimmet çakışması engeli
-- [ ] AuditLogs: assign, return, asset/user değişiklikleri
-- [ ] Geçmiş sorguları; audit silme/güncelleme API’si yok
+- [x] Assign: uygun status (ör. IN_STOCK), `assigned_by`, `assigned_at`
+- [x] Return: `returned_at`, asset → IN_STOCK
+- [x] Aktif zimmet çakışması engeli
+- [x] AuditLogs: assign, return, asset/user değişiklikleri
+- [x] Geçmiş sorguları; audit silme/güncelleme API’si yok
 
 ### Frontend
 
-- [ ] Zimmet teslim ekranı (cihaz + personel)
-- [ ] İade akışı (listeden veya detaydan)
-- [ ] Personel: Zimmetlerim
-- [ ] Personel: yetkili cihaz detayı
+- [x] Zimmet teslim ekranı (cihaz + personel)
+- [x] İade akışı (listeden veya detaydan)
+- [x] Personel: Zimmetlerim
+- [x] Personel: yetkili cihaz detayı
 
 **Test notu (PRD §7):** Aktif zimmetli cihaz iade alınmadan başkasına verilemez; iade sonrası yeniden zimmet mümkün; geçmiş korunur.
 
@@ -325,3 +325,10 @@ Her aşama bittiğinde doldur:
 - **Doğrulama:** 11 yeni test (mükerrer seri no/kod 409, form doğrulaması, arama+filtre+sayfalama, departman/kullanıcı filtresi, personel yetki sınırı, QR → doğru cihaz) — toplam 34 test geçti.
 - **Kalan:** —
 - **Sıradaki adım:** Aşama 5 — Zimmet ve log altyapısı
+
+### Aşama 5
+
+- **Tamamlanan:** Zimmet teslim (cihaz satır kilidi + IN_STOCK kontrolü + partial unique index; pasif kullanıcı/cihaz reddi), iade (sağlam → IN_STOCK, arızalı → DEFECTIVE), zimmet listesi (aktif/iade/tümü, arama, departman, tarih aralığı), `/api/me/assignments` (sorgu her zaman giriş yapan kullanıcıya sabit), cihaz zimmet geçmişi ve zaman çizelgesi, işlem geçmişi API'si (yalnızca okuma). Zimmet kayıtları ve audit log'lar DB trigger'larıyla korunuyor (silinemez; iade dışında değiştirilemez). Arayüz: Zimmetler sayfası, Zimmetle / İade al pencereleri (aranabilir cihaz ve personel seçimi), Zimmetlerim, İşlem geçmişi, cihaz detayında zimmet geçmişi + zaman çizelgesi.
+- **Doğrulama:** 10 yeni test — aynı cihaza 8 eşzamanlı zimmet isteğinden yalnızca 1'i başarılı; iade sonrası yeniden zimmet; geçmiş korunuyor; personel 403 / IDOR koruması; audit ve zimmet kayıtları SQL ile bile silinemiyor. Toplam 44 test geçti. Arayüzde uçtan uca zimmet → iade akışı denendi.
+- **Kalan:** —
+- **Sıradaki adım:** Aşama 6 — Dashboard ve responsive UI

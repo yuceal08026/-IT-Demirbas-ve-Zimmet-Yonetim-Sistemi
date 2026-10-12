@@ -8,6 +8,9 @@ import DepartmentsPage from './pages/DepartmentsPage.jsx';
 import AssetsPage from './pages/AssetsPage.jsx';
 import AssetFormPage from './pages/AssetFormPage.jsx';
 import AssetDetailPage from './pages/AssetDetailPage.jsx';
+import AssignmentsPage from './pages/AssignmentsPage.jsx';
+import MyAssetsPage from './pages/MyAssetsPage.jsx';
+import AuditPage from './pages/AuditPage.jsx';
 import { ForbiddenPage, NotFoundPage } from './pages/StatusPages.jsx';
 
 /**
@@ -24,7 +27,9 @@ const ROUTES = [
   { path: '/assets/:id/edit', admin: true, element: ({ id }) => <AssetFormPage id={id} key={id} /> },
   // Personel de yalnızca kendi zimmetindeki cihazın detayını görebilir (backend 404 döner).
   { path: '/assets/:id', element: ({ id }) => <AssetDetailPage id={id} key={id} /> },
-  { path: '/my-assets', element: () => <ForbiddenPage /> },
+  { path: '/assignments', admin: true, element: () => <AssignmentsPage /> },
+  { path: '/audit', admin: true, element: () => <AuditPage /> },
+  { path: '/my-assets', element: () => <MyAssetsPage /> },
 ];
 
 export default function App() {

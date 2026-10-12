@@ -25,6 +25,16 @@ export function describe(entry) {
       return `${d.user_name || 'Personel'} kişisinden iade alındı; cihaz ${d.condition === 'DEFECTIVE' ? 'arızalı' : 'depoda'}${d.return_note ? `. Not: ${d.return_note}` : ''}`;
     case 'ASSET_CREATE':
       return d.seed ? 'Envantere eklendi (örnek veri)' : 'Envantere eklendi';
+    case 'LOGIN':
+      return d.ip ? `IP: ${d.ip}` : '';
+    case 'LOGIN_FAILED':
+      return `${d.email || ''}: ${{ unknown_email: 'kayıtlı olmayan e-posta', wrong_password: 'hatalı parola', inactive: 'pasif hesap' }[d.reason] || 'reddedildi'}${d.ip ? ` (IP: ${d.ip})` : ''}`;
+    case 'USER_CREATE':
+      return `${d.email || ''}, rol: ${d.role === 'ADMIN' ? 'Yönetici' : 'Personel'}`;
+    case 'USER_DELETE':
+    case 'ASSET_DELETE':
+    case 'USER_PASSWORD_RESET':
+      return [d.ad_soyad, d.email, d.brand && `${d.brand} ${d.model}`, d.serial_number && `SN ${d.serial_number}`].filter(Boolean).join(', ');
     case 'MAINTENANCE_OPEN':
       return d.issue_description ? `Arıza: ${d.issue_description}` : '';
     case 'MAINTENANCE_UPDATE':

@@ -11,6 +11,8 @@ import { writeAudit, diff } from '../utils/audit.js';
 import { Where, likePattern, paginated } from '../utils/sql.js';
 import { ASSET_SELECT, findAsset, presentAsset, qrTargetUrl } from '../services/assets.js';
 import { nextAssetCode } from '../services/assetCode.js';
+import { ASSIGNMENT_SELECT, presentAssignment } from '../services/assignments.js';
+import { auditListSchema, listAudit } from './auditLogs.js';
 
 const router = Router();
 router.use(authenticate);
@@ -165,6 +167,23 @@ router.get('/:id/qr', validate({ params: idParam, query: qrQuery }), async (req,
   } else {
     res.type('png').send(await QRCode.toBuffer(url, { type: 'png', width: 360, margin: 1, errorCorrectionLevel: 'M' }));
   }
+});
+
+// GET /api/assets/:id/assignments — cihazın tüm zimmet geçmişi (yeniden eskiye)
+router.get('/:id/assignments', requireAdmin, validate({ params: idParam }), async (req, res) => {
+  const { id } = req.valid.params;
+  const { rowCount } = await query('SELECT 1 FROM assets WHERE id = $1', [id]);
+  if (!rowCount) throw notFound('Cihaz bulunamadı');
+  const { rows } = await query(`${ASSIGNMENT_SELECT} WHERE s.asset_id = $1 ORDER BY s.assigned_at DESC, s.id DESC LIMIT 500`, [id]);
+  res.json({ data: rows.map(presentAssignment) });
+});
+
+// GET /api/assets/:id/history — cihaz zaman çizelgesi (ekleme, düzenleme, durum, zimmet, iade, bakım)
+router.get('/:id/history', requireAdmin, validate({ params: idParam, query: auditListSchema }), async (req, res) => {
+  const { id } = req.valid.params;
+  const { rowCount } = await query('SELECT 1 FROM assets WHERE id = $1', [id]);
+  if (!rowCount) throw notFound('Cihaz bulunamadı');
+  res.json(await listAudit(req.valid.query, { entity_type: 'ASSET', entity_id: id }));
 });
 
 // ---------- Yazma uçları (yalnızca yönetici) ----------

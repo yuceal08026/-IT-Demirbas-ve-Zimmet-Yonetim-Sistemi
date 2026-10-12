@@ -72,7 +72,7 @@ export default function SearchPicker({
             onFocus={() => setOpen(true)} onKeyDown={onKeyDown} />
           {open && (
             <ul id={listId} role="listbox" aria-label={label}
-              className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-line bg-surface py-1 shadow-lg shadow-ink/10">
+              className="mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-line bg-surface py-1 shadow-md shadow-ink/5">
               {loading && items.length === 0 && <li className="flex items-center gap-2 px-3 py-2 text-sm text-steel"><Spinner className="size-4" />Aranıyor…</li>}
               {!loading && items.length === 0 && <li className="px-3 py-2 text-sm text-steel">{emptyText}</li>}
               {items.map((item, i) => (
