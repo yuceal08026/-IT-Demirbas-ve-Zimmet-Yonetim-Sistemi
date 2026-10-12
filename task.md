@@ -7,11 +7,11 @@
 
 ## Çalışma kuralları
 
-- [ ] Projeyi tek seferde değil, aşama aşama geliştir.
-- [ ] Her aşamaya başlamadan önce yapılacakları ve etkilenecek dosyaları netleştir.
-- [ ] Yetkilendirme yalnızca arayüzde değil, backend middleware ile doğrulansın.
-- [ ] Aşama 1 (tasarım) onaylanmadan uygulama koduna geçilmesin.
-- [ ] Her aşama sonunda: **Tamamlanan / Kalan / Sıradaki adım** notu düş.
+- [x] Projeyi tek seferde değil, aşama aşama geliştir.
+- [x] Her aşamaya başlamadan önce yapılacakları ve etkilenecek dosyaları netleştir.
+- [x] Yetkilendirme yalnızca arayüzde değil, backend middleware ile doğrulansın.
+- [x] Aşama 1 (tasarım) onaylanmadan uygulama koduna geçilmesin.
+- [x] Her aşama sonunda: **Tamamlanan / Kalan / Sıradaki adım** notu düş.
 
 ---
 
@@ -253,12 +253,12 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 **Tamamlanma ölçütü:** Sıfır ortamda `docker-compose up` ile sistem ayağa kalkar; README yeterli.
 
-- [ ] README: proje özeti, tech stack, kurulum, env değişkenleri, seed admin
-- [ ] Ekran görüntüleri
-- [ ] Docker Compose: postgres + api + frontend (veya nginx)
-- [ ] `docker-compose up` uçtan uca doğrula (PRD §7)
-- [ ] Public GitHub/GitLab; `.env` commit edilmemiş
-- [ ] Zorunlu PRD checklist’inin tamamı işaretli
+- [x] README: proje özeti, tech stack, kurulum, env değişkenleri, seed admin
+- [x] Ekran görüntüleri
+- [x] Docker Compose: postgres + api + frontend (veya nginx)
+- [ ] `docker-compose up` uçtan uca doğrula (PRD §7) — *Docker'ın çalıştığı bir makinede yapılmalı; aşağıdaki nota bakın*
+- [ ] Public GitHub/GitLab; `.env` commit edilmemiş — *depo hazır (`.env` yok, `.gitignore` doğru); GitHub'a gönderme sizde*
+- [x] Zorunlu PRD checklist’inin tamamı işaretli
 
 ---
 
@@ -347,3 +347,11 @@ Her aşama bittiğinde doldur:
 - **Doğrulama:** Toplam 60 otomatik test geçti. PRD §7'nin dört senaryosu (yetki ihlali, mükerrer kayıt, çakışan zimmet, dashboard tutarlılığı), geçersiz/eksik form reddi ve gizli bilgi sızıntısı testleri (yanıtlarda hash yok, audit'te parola yok, stack trace dönmüyor) bunlara dahil. Bakım akışı ve CSV indirme arayüzden uçtan uca denendi.
 - **Kalan:** —
 - **Sıradaki adım:** Aşama 8 — Teslimat (Docker, README)
+
+### Aşama 8
+
+- **Tamamlanan:** `backend/Dockerfile` (root olmayan kullanıcı, healthcheck, açılışta migration + seed + API), `frontend/Dockerfile` (Vite derleme + nginx), `frontend/nginx.conf` (SPA yönlendirme, `/api` ters vekil, güvenlik başlıkları, statik dosya önbelleği), `docker-compose.yml` (db + api + web; DB portu dışarı kapalı; `.env` olmadan da çalışır), `docker-compose.dev.yml` (yerel geliştirme/test için DB portu), README (özet, teknoloji, kurulum, env tablosu, demo hesaplar, oturum stratejisi, testler, PRD §7 eşleşmesi, ekran görüntüleri), `docs/screenshots/`.
+- **Güvenlik kararı:** `JWT_SECRET` örnek dosyalarda boş; tanımsızsa API rastgele anahtar üretir (bilinen bir varsayılanla çalışma riski yok).
+- **Doğrulama:** `docker compose config` geçerli. Konteyner açılış komutu (`migrate → seed → server`) `NODE_ENV=production` ile boş veritabanında birebir çalıştırıldı; ikinci çalıştırmada veri çoğalmadı. 60 backend testi geçti. Tüm ekranlar yönetici ve personel olarak gezildi, tarayıcı hatası yok.
+- **Kalan:** Bu geliştirme ortamında Docker daemon ve npm kayıt sunucusu erişimi olmadığından gerçek `docker compose up --build` ve `npm install` burada çalıştırılamadı. İlk çalıştırmayı Docker kurulu bir makinede yapıp oluşan `package-lock.json` dosyalarını commit edin. Public depoya gönderme.
+- **Sıradaki adım:** (Opsiyonel) Aşama 9 — Mobil uygulama

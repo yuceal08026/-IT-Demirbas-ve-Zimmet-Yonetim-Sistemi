@@ -12,12 +12,12 @@
 | Ayar | Değer |
 |------|-------|
 | Algoritma | `HS256` (doğrulamada algoritma sabitlenir, `none` kabul edilmez) |
-| Secret | `JWT_SECRET` ortam değişkeni, ≥ 32 karakter; tanımsız/kısaysa uygulama **başlamaz** |
+| Secret | `JWT_SECRET` ortam değişkeni, ≥ 32 karakter. Kısaysa uygulama **başlamaz**; hiç verilmemişse her açılışta rastgele anahtar üretilir (sabit/tahmin edilebilir varsayılan yoktur; bedeli yeniden başlatmada oturumların kapanmasıdır) |
 | Süre | `JWT_EXPIRES_IN`, varsayılan `8h` (bir mesai günü) |
 | Payload | `{ sub: userId, role, tv: token_version }` — kişisel veri yok |
 
 **Taşıma:**
-- **Web:** Token `httpOnly; Secure (prod); SameSite=Strict; Path=/` cookie'de. JavaScript erişemez → XSS ile token çalınamaz. Frontend ve API aynı origin'den sunulur (dev'de Vite proxy, prod'da nginx), bu yüzden CORS gerekmez.
+- **Web:** Token `httpOnly; SameSite=Strict; Path=/` cookie'de (HTTPS arkasında `COOKIE_SECURE=true` ile `Secure` bayrağı da eklenir). JavaScript erişemez → XSS ile token çalınamaz. Frontend ve API aynı origin'den sunulur (dev'de Vite proxy, prod'da nginx), bu yüzden CORS gerekmez.
 - **Mobil (Faz 3) / API istemcileri:** Login yanıtındaki `token` alanı `Authorization: Bearer` ile gönderilir. `authenticate` önce başlığa, sonra cookie'ye bakar.
 - **CSRF:** `SameSite=Strict` + API yalnızca `application/json` gövde kabul eder (form-POST ile tetiklenemez).
 
@@ -42,7 +42,7 @@ Ayrıntılı uç-middleware eşleşmesi: [PERMISSIONS.md](./PERMISSIONS.md).
 ## 5. Gizli bilgilerin log ve repoya girmemesi
 
 - `.env` `.gitignore`'da; repoda yalnızca `.env.example` (sahte değerlerle).
-- Seed admin parolası `SEED_ADMIN_PASSWORD` env'den okunur; tanımsızsa geliştirme ortamında rastgele üretilip **yalnızca bir kez** konsola yazılır, prod'da seed başarısız olur.
+- Seed admin parolası `SEED_ADMIN_PASSWORD` env'den okunur; tanımsızsa geliştirme ortamında rastgele üretilip **yalnızca bir kez** konsola yazılır, prod'da seed başarısız olur. Docker Compose demo için `Admin12345` varsayılanını verir; gerçek kullanımda `.env` ile değiştirilmeli ve ilk girişten sonra parola sıfırlanmalıdır.
 - HTTP istek logları (`morgan`) gövde içermez; `Authorization` ve `Cookie` başlıkları loglanmaz.
 - `errorHandler` 500 hatalarında stack trace'i istemciye dönmez; sunucu logunda tutar.
 - Audit log `details` alanına parola/hash/token yazılmaz (servis katmanında `sanitize` yardımcı fonksiyonu).

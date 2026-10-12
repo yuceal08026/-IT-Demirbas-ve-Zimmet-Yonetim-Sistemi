@@ -1,3 +1,6 @@
+# Tüm sistem:  docker compose up --build   →  http://localhost:8080
+# .env dosyası isteğe bağlıdır; yoksa aşağıdaki varsayılanlarla çalışır (üretim için .env ile değiştirin).
+
 services:
   db:
     image: postgres:16-alpine
@@ -5,17 +8,48 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-zimmet}
       POSTGRES_USER: ${POSTGRES_USER:-zimmet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?.env dosyasında POSTGRES_PASSWORD tanımlayın}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zimmet-local-dev}
     volumes:
       - db-data:/var/lib/postgresql/data
-    ports:
-      # Yalnızca yerel geliştirme için (backend'i Docker dışında çalıştırırken)
-      - "127.0.0.1:5432:5432"
+    # Veritabanı portu dışarı açılmaz; yalnızca iç ağdan (api) erişilir.
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
-      retries: 10
+      retries: 15
+
+  api:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://${POSTGRES_USER:-zimmet}:${POSTGRES_PASSWORD:-zimmet-local-dev}@db:5432/${POSTGRES_DB:-zimmet}
+      # Boş bırakılırsa API her açılışta rastgele bir anahtar üretir (güvenli, ama yeniden başlatmada oturumlar kapanır).
+      JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@kurum.local}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin12345}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Sistem Yöneticisi}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      ALERT_WARRANTY_DAYS: ${ALERT_WARRANTY_DAYS:-60}
+      ALERT_IDLE_DAYS: ${ALERT_IDLE_DAYS:-90}
+      ALERT_DEFECTIVE_DAYS: ${ALERT_DEFECTIVE_DAYS:-30}
+      REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Europe/Istanbul}
+
+  web:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-8080}:80"
 
 volumes:
   db-data:

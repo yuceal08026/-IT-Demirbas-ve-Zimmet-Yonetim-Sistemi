@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import crypto from 'node:crypto';
 
 /**
  * Tüm ortam değişkenleri tek yerden okunur ve doğrulanır.
@@ -41,9 +42,16 @@ export const config = {
 };
 
 export function assertSecurityConfig() {
-  if (!config.jwt.secret || config.jwt.secret.length < 32) {
+  // JWT_SECRET hiç verilmemişse sabit bir varsayılan yerine rastgele anahtar üretilir:
+  // sistem sıfır kurulumda da güvenli çalışır; tek bedeli, API yeniden başlayınca oturumların düşmesidir.
+  if (!config.jwt.secret) {
+    config.jwt.secret = crypto.randomBytes(48).toString('hex');
+    console.warn('[config] JWT_SECRET tanımlı değil; bu çalıştırma için rastgele bir anahtar üretildi. '
+      + 'Yeniden başlatmada oturumlar kapanır. Kalıcı bir anahtar için .env dosyasında JWT_SECRET tanımlayın.');
+  }
+  if (config.jwt.secret.length < 32) {
     throw new Error(
-      'JWT_SECRET tanımlı değil veya 32 karakterden kısa. .env dosyasını kontrol edin (bkz. .env.example).',
+      'JWT_SECRET 32 karakterden kısa. Daha uzun bir değer kullanın (bkz. .env.example).',
     );
   }
   if (!/^\d+\s*[smhd]?$/i.test(String(config.jwt.expiresIn).trim())) {

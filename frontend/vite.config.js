@@ -8,6 +8,8 @@ const API_TARGET = process.env.VITE_API_TARGET || 'http://localhost:3000';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Derleme çıktısı /static altında: uygulamanın /assets/:id sayfa yollarıyla çakışmasın.
+  build: { assetsDir: 'static' },
   server: {
     port: 5173,
     proxy: {
