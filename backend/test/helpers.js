@@ -52,7 +52,10 @@ export function client() {
       cookie = /Expires=Thu, 01 Jan 1970/i.test(c) || value === '' ? '' : pair;
     }
     const type = res.headers.get('content-type') || '';
-    const data = type.includes('json') ? await res.json() : type.startsWith('text') ? await res.text() : Buffer.from(await res.arrayBuffer());
+    // CSV ham bayt olarak okunur: text() UTF-8 BOM'u siler, oysa BOM'un varlığını test ediyoruz.
+    const data = type.includes('json') ? await res.json()
+      : type.startsWith('text') && !type.includes('csv') ? await res.text()
+        : Buffer.from(await res.arrayBuffer());
     return { status: res.status, body: data, headers: res.headers, setCookie };
   }
 

@@ -126,7 +126,7 @@ Zimmet kayıtları için **güncelleme/silme ucu yoktur**; tek değişiklik iade
 
 | Metot | Yol | Yetki | Yanıt |
 |-------|-----|-------|-------|
-| GET | `/api/dashboard/stats` | Admin | `{ total, active, defective, in_stock, inactive, users: {total, active} }` |
+| GET | `/api/dashboard/stats` | Admin | `{ assets: {total, active, in_stock, defective, inactive}, users: {total, active}, by_category[], by_department[], recent_activity[], alerts: {total, by_type, by_severity}, generated_at }` |
 
 Tanımlar (PRD §7 veri tutarlılığı): her istekte canlı `COUNT` sorgusu, önbellek yok.
 - `total` = `COUNT(*) WHERE is_active`
@@ -145,14 +145,31 @@ Yalnızca okuma. POST/PATCH/DELETE yok; DB trigger'ı da değişikliği engeller
 **`action_type` sözlüğü:** `LOGIN`, `LOGIN_FAILED`, `USER_CREATE`, `USER_UPDATE`, `USER_PASSWORD_RESET`, `USER_DEACTIVATE`, `USER_ACTIVATE`, `USER_DELETE`, `DEPARTMENT_CREATE`, `DEPARTMENT_UPDATE`, `DEPARTMENT_DELETE`, `ASSET_CREATE`, `ASSET_UPDATE`, `ASSET_STATUS_CHANGE`, `ASSET_DEACTIVATE`, `ASSET_ACTIVATE`, `ASSET_DELETE`, `ASSIGN`, `RETURN`.
 `details` alanı değişen alanların önceki/sonraki değerlerini ve ilgili adların anlık görüntüsünü içerir; parola veya hash **asla** yazılmaz.
 
-## 9. Faz 2 (Aşama 7'de detaylandırılacak — yer tutucu)
+## 9. Faz 2 — uyarılar, bakım, raporlar (Aşama 7'de uygulandı)
 
-| Metot | Yol | Yetki |
-|-------|-----|-------|
-| GET | `/api/alerts` (garanti yaklaşan, uzun süre depoda, tutarsız kayıt) | Admin |
-| GET/POST | `/api/assets/:id/maintenance` | Admin |
-| PATCH | `/api/maintenance/:id` | Admin |
-| GET | `/api/reports/assets.csv`, `/api/reports/assignments.csv` | Admin |
+Tamamı **Admin**.
+
+| Metot | Yol | Açıklama |
+|-------|-----|----------|
+| GET | `/api/alerts?type=&severity=` | DB'den anlık üretilen uyarılar + tür bazında özet. Türler: `INCONSISTENT_STATUS` (kritik: "Zimmetli" ama aktif zimmet yok / zimmet var ama durum farklı / pasif kullanıcı veya pasif cihazda aktif zimmet), `WARRANTY_EXPIRING` (≤ `ALERT_WARRANTY_DAYS`, vars. 60), `LONG_DEFECTIVE` (> `ALERT_DEFECTIVE_DAYS`, vars. 30), `LONG_IN_STOCK` (> `ALERT_IDLE_DAYS`, vars. 90), `WARRANTY_EXPIRED_IN_USE`, `MISSING_INFO` |
+| GET | `/api/assets/:id/maintenance` | Cihazın arıza kayıtları (yeni → eski) |
+| POST | `/api/assets/:id/maintenance` | `{issue_description, mark_defective?=true}` → `201`. Depodaki cihaz `DEFECTIVE` olur; zimmetli cihaz personelde kalır |
+| GET | `/api/maintenance?status=OPEN\|IN_PROGRESS\|RESOLVED\|open` | Tüm arıza kayıtları |
+| PATCH | `/api/maintenance/:id` | `{status?, solution_note?, return_to_stock?}`. `RESOLVED` için çözüm notu zorunlu; kapalı kayıt değiştirilemez (`409 MAINTENANCE_CLOSED`); `return_to_stock` açık kaydı kalmayan arızalı cihazı `IN_STOCK` yapar |
+| GET | `/api/reports/assets.csv` | Filtre: `status, department_id, category, from, to` (alım tarihi), `include_inactive` |
+| GET | `/api/reports/assignments.csv` | Filtre: `active, department_id, from, to` (teslim tarihi) |
+| GET | `/api/reports/assets`, `/api/reports/assignments` | Aynı filtrelerle JSON önizleme (arayüz tablosu ve yazdır/PDF için) |
+
+CSV biçimi: UTF-8 BOM + `;` ayraç (Türkçe Excel doğrudan açar), tarih-saatler `REPORT_TIMEZONE` (vars. Europe/Istanbul) ile, `= + - @` ile başlayan hücreler formül enjeksiyonuna karşı `'` ile kaçırılır. PDF: rapor sayfasındaki "Yazdır / PDF" tarayıcının yazdırma diyaloğunu kullanır.
+
+Bakım işlemleri cihaz zaman çizelgesine `MAINTENANCE_OPEN`, `MAINTENANCE_UPDATE`, `MAINTENANCE_RESOLVE` olarak yazılır.
+
+### Yardımcı uçlar
+
+| Metot | Yol | Yetki | Açıklama |
+|-------|-----|-------|----------|
+| GET | `/api/assets/categories` | Admin | Kayıtlı kategoriler (filtre ve form önerileri) |
+| GET | `/api/audit-logs/actions` | Admin | Kayıtlı işlem tipleri (filtre) |
 
 ## 10. PRD §7 kabul kriterleri ↔ API
 

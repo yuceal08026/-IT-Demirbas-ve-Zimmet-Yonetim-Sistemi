@@ -13,6 +13,7 @@ import MyAssetsPage from './pages/MyAssetsPage.jsx';
 import AuditPage from './pages/AuditPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import AlertsPage from './pages/AlertsPage.jsx';
+import ReportsPage from './pages/ReportsPage.jsx';
 import { ForbiddenPage, NotFoundPage } from './pages/StatusPages.jsx';
 
 /**
@@ -32,6 +33,7 @@ const ROUTES = [
   { path: '/assets/:id', element: ({ id }) => <AssetDetailPage id={id} key={id} /> },
   { path: '/assignments', admin: true, element: () => <AssignmentsPage /> },
   { path: '/audit', admin: true, element: () => <AuditPage /> },
+  { path: '/reports', admin: true, element: () => <ReportsPage /> },
   { path: '/my-assets', element: () => <MyAssetsPage /> },
 ];
 

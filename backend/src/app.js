@@ -15,6 +15,8 @@ import meRouter from './routes/me.js';
 import auditLogsRouter from './routes/auditLogs.js';
 import dashboardRouter from './routes/dashboard.js';
 import alertsRouter from './routes/alerts.js';
+import maintenanceRouter, { assetMaintenanceRouter } from './routes/maintenance.js';
+import reportsRouter from './routes/reports.js';
 
 export function createApp() {
   const app = express();
@@ -39,11 +41,14 @@ export function createApp() {
   app.use('/api/users', usersRouter);
   app.use('/api/departments', departmentsRouter);
   app.use('/api/assets', assetsRouter);
+  app.use('/api/assets', assetMaintenanceRouter);
   app.use('/api/assignments', assignmentsRouter);
   app.use('/api/me', meRouter);
   app.use('/api/audit-logs', auditLogsRouter);
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/alerts', alertsRouter);
+  app.use('/api/maintenance', maintenanceRouter);
+  app.use('/api/reports', reportsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

@@ -36,11 +36,15 @@ export function describe(entry) {
     case 'USER_PASSWORD_RESET':
       return [d.ad_soyad, d.email, d.brand && `${d.brand} ${d.model}`, d.serial_number && `SN ${d.serial_number}`].filter(Boolean).join(', ');
     case 'MAINTENANCE_OPEN':
-      return d.issue_description ? `Arıza: ${d.issue_description}` : '';
+      return [d.issue_description && `Arıza: ${d.issue_description}`, d.changes?.status && 'cihaz arızalı olarak işaretlendi']
+        .filter(Boolean).join('; ');
     case 'MAINTENANCE_UPDATE':
     case 'MAINTENANCE_RESOLVE':
-      return [d.status && `Durum: ${{ OPEN: 'Açık', IN_PROGRESS: 'İşlemde', RESOLVED: 'Çözüldü' }[d.status] || d.status}`, d.solution_note && `Çözüm: ${d.solution_note}`]
-        .filter(Boolean).join('. ');
+      return [
+        d.status && `Durum: ${{ OPEN: 'Açık', IN_PROGRESS: 'İşlemde', RESOLVED: 'Çözüldü' }[d.status] || d.status}`,
+        d.solution_note && `Çözüm: ${d.solution_note}`,
+        d.changes?.status && 'Cihaz depoya alındı',
+      ].filter(Boolean).join('. ');
     default: {
       const parts = Object.entries(d.changes || {}).map(
         ([field, c]) => `${FIELD_LABELS[field] || field}: ${fmtValue(field, c.from)} → ${fmtValue(field, c.to)}`,

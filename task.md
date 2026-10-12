@@ -61,7 +61,7 @@ PRD §4.1 — tamamlandıkça işaretle:
 - [x] Zimmet iade
 - [x] Personel — zimmetlerim
 - [x] İşlem geçmişi / audit (Admin)
-- [ ] (Faz 2) Uyarı merkezi, bakım, raporlama
+- [x] (Faz 2) Uyarı merkezi, bakım, raporlama
 
 ---
 
@@ -213,39 +213,39 @@ PRD §4.1 — tamamlandıkça işaretle:
 
 ### Akıllı demirbaş kontrol merkezi (PRD §4.2)
 
-- [ ] Garanti süresi yaklaşan cihazlar (`warranty_end_date`)
-- [ ] Uzun süredir IN_STOCK cihazlar
-- [ ] Eksik / çelişkili kayıt uyarıları
-- [ ] Uyarıdan cihaz detayına geçiş
-- [ ] Uyarılar sabit/sahte değil, DB’den üretilir
+- [x] Garanti süresi yaklaşan cihazlar (`warranty_end_date`)
+- [x] Uzun süredir IN_STOCK cihazlar
+- [x] Eksik / çelişkili kayıt uyarıları
+- [x] Uyarıdan cihaz detayına geçiş
+- [x] Uyarılar sabit/sahte değil, DB’den üretilir
 
 ### Detaylı cihaz zaman çizelgesi
 
-- [ ] Audit + assignment birleşik kronoloji UI
-- [ ] İşlemi yapan kullanıcı ve tarih görünür
-- [ ] Geçmiş kayıtlar kullanıcı CRUD ile değiştirilemez
+- [x] Audit + assignment birleşik kronoloji UI
+- [x] İşlemi yapan kullanıcı ve tarih görünür
+- [x] Geçmiş kayıtlar kullanıcı CRUD ile değiştirilemez
 
 ### Arıza ve bakım
 
-- [ ] MaintenanceRecords migration
-- [ ] Arıza oluştur, durum güncelle, çözüm notu, kapat
-- [ ] Cihaz başına birden fazla arıza kaydı
-- [ ] Cihaz detayda bakım geçmişi
+- [x] MaintenanceRecords migration
+- [x] Arıza oluştur, durum güncelle, çözüm notu, kapat
+- [x] Cihaz başına birden fazla arıza kaydı
+- [x] Cihaz detayda bakım geçmişi
 
 ### Raporlama
 
-- [ ] Filtre: durum, departman, tarih aralığı
-- [ ] CSV dışa aktarma
-- [ ] (Opsiyonel) PDF export
+- [x] Filtre: durum, departman, tarih aralığı
+- [x] CSV dışa aktarma
+- [x] (Opsiyonel) PDF export
 
 ### Test paketi
 
-- [ ] PRD §7 — yetki ihlali engeli
-- [ ] PRD §7 — mükerrer kayıt koruması
-- [ ] PRD §7 — çakışan zimmet engeli
-- [ ] PRD §7 — veri tutarlılığı (dashboard)
-- [ ] Geçersiz/eksik form backend’de reddedilir
-- [ ] Gizli bilgiler log ve repoda yok
+- [x] PRD §7 — yetki ihlali engeli
+- [x] PRD §7 — mükerrer kayıt koruması
+- [x] PRD §7 — çakışan zimmet engeli
+- [x] PRD §7 — veri tutarlılığı (dashboard)
+- [x] Geçersiz/eksik form backend’de reddedilir
+- [x] Gizli bilgiler log ve repoda yok
 
 ---
 
@@ -339,3 +339,11 @@ Her aşama bittiğinde doldur:
 - **Doğrulama:** Dashboard sayıları her işlemden (ekleme, arıza, zimmet, pasife alma, arızalı iade) sonra doğrudan SQL sayımıyla birebir karşılaştırıldı; `toplam = zimmetli + depoda + arızalı` her adımda doğru. Masaüstü, tablet ve mobil ekran görüntüleri alındı.
 - **Kalan:** —
 - **Sıradaki adım:** Aşama 7 — İleri özellikler ve testler
+
+### Aşama 7
+
+- **Tamamlanan:** Akıllı kontrol merkezi (6 kural, hepsi canlı SQL; eşikler env ile ayarlanabilir; uyarıdan cihaz detayına geçiş), cihaz zaman çizelgesi (audit + zimmet + bakım tek kronolojide, işlemi yapan ve tarih görünür), arıza/bakım kayıtları (`004_maintenance.sql`; aç, işleme al, çözüm notuyla kapat, kapanan kayıt kilitli, cihaz başına çoklu kayıt, kapanışta depoya alma), raporlar (envanter + zimmet; durum/departman/kategori/tarih aralığı filtresi; CSV indirme; tarayıcıdan yazdır/PDF).
+- **PDF notu:** Ayrı bir PDF kütüphanesi eklenmedi; rapor sayfası yazdırma için biçimlendirildi ve tarayıcının "PDF olarak kaydet" seçeneğiyle PDF alınır.
+- **Doğrulama:** Toplam 60 otomatik test geçti. PRD §7'nin dört senaryosu (yetki ihlali, mükerrer kayıt, çakışan zimmet, dashboard tutarlılığı), geçersiz/eksik form reddi ve gizli bilgi sızıntısı testleri (yanıtlarda hash yok, audit'te parola yok, stack trace dönmüyor) bunlara dahil. Bakım akışı ve CSV indirme arayüzden uçtan uca denendi.
+- **Kalan:** —
+- **Sıradaki adım:** Aşama 8 — Teslimat (Docker, README)
