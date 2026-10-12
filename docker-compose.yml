@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-zimmet}
+      POSTGRES_USER: ${POSTGRES_USER:-zimmet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?.env dosyasında POSTGRES_PASSWORD tanımlayın}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      # Yalnızca yerel geliştirme için (backend'i Docker dışında çalıştırırken)
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db-data:
