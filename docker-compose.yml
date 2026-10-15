@@ -1,5 +1,6 @@
-# Tüm sistem:  docker compose up --build   →  http://localhost:8080
-# .env dosyası isteğe bağlıdır; yoksa aşağıdaki varsayılanlarla çalışır (üretim için .env ile değiştirin).
+# Tüm sistem:  cp .env.example .env  (POSTGRES_PASSWORD ve JWT_SECRET'ı doldurun)  →  docker compose up --build -d  →  http://localhost:8080
+# .env ZORUNLUDUR: POSTGRES_PASSWORD veya JWT_SECRET tanımlı değilse compose başlamaz (güvensiz varsayılan yok).
+# İlk yönetici:  docker compose exec api npm run create-admin -- --email ad.soyad@kurum.gov.tr --name "Ad Soyad"
 
 services:
   db:
@@ -8,7 +9,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-zimmet}
       POSTGRES_USER: ${POSTGRES_USER:-zimmet}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-zimmet-local-dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD tanımlı değil - .env.example dosyasını .env olarak kopyalayıp doldurun}
     volumes:
       - db-data:/var/lib/postgresql/data
     # Veritabanı portu dışarı açılmaz; yalnızca iç ağdan (api) erişilir.
@@ -27,20 +28,25 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-      DATABASE_URL: postgres://${POSTGRES_USER:-zimmet}:${POSTGRES_PASSWORD:-zimmet-local-dev}@db:5432/${POSTGRES_DB:-zimmet}
-      # Boş bırakılırsa API her açılışta rastgele bir anahtar üretir (güvenli, ama yeniden başlatmada oturumlar kapanır).
-      JWT_SECRET: ${JWT_SECRET:-}
+      # Parola URL içinde kullanıldığı için harf, rakam, - _ . ~ dışındaki karakterlerden kaçının.
+      DATABASE_URL: postgres://${POSTGRES_USER:-zimmet}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD tanımlı değil}@db:5432/${POSTGRES_DB:-zimmet}
+      # Üretimde zorunlu, en az 32 karakter (API eksik/zayıf değerle başlamaz).
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET tanımlı değil - .env dosyasında en az 32 karakterlik rastgele bir değer verin}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
-      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@kurum.local}
-      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-Admin12345}
-      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Sistem Yöneticisi}
-      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      TRUST_PROXY: ${TRUST_PROXY:-}
+      # Kendi kendine kayıt: yalnızca bu alan adlarındaki e-postalar kaydolabilir (yönetici onayıyla).
+      # Kaydı kapatmak için .env içine boş değer yazın: REGISTRATION_EMAIL_DOMAINS=
+      REGISTRATION_EMAIL_DOMAINS: ${REGISTRATION_EMAIL_DOMAINS-gop.edu.tr}
+      # İsteğe bağlı: ilk yönetici (yalnızca hiç aktif yönetici yokken bir kez kullanılır). Önerilen yöntem create-admin komutudur.
+      INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      INITIAL_ADMIN_NAME: ${INITIAL_ADMIN_NAME:-}
       ALERT_WARRANTY_DAYS: ${ALERT_WARRANTY_DAYS:-60}
       ALERT_IDLE_DAYS: ${ALERT_IDLE_DAYS:-90}
       ALERT_DEFECTIVE_DAYS: ${ALERT_DEFECTIVE_DAYS:-30}
-      REPORT_TIMEZONE: ${REPORT_TIMEZONE:-Europe/Istanbul}
+      APP_TIMEZONE: ${APP_TIMEZONE:-Europe/Istanbul}
 
   web:
     build: ./frontend

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { badRequest } from '../utils/errors.js';
+import { isKnownWeakPassword, PASSWORD_MIN_LENGTH } from '../utils/passwords.js';
 
 /**
  * İstek doğrulama. Doğrulanmış ve dönüştürülmüş değerler req.valid.{body,query,params}
@@ -64,11 +65,12 @@ export const email = z
   .email('Geçerli bir e-posta adresi girin');
 
 export const password = z
-  .string({ required_error: 'Parola zorunludur' })
-  .min(8, 'Parola en az 8 karakter olmalıdır')
+  .string({ required_error: 'Parola zorunludur', invalid_type_error: 'Parola metin olmalıdır' })
+  .min(PASSWORD_MIN_LENGTH, `Parola en az ${PASSWORD_MIN_LENGTH} karakter olmalıdır`)
   .max(72, 'Parola en fazla 72 karakter olabilir')
   .regex(/[A-Za-zÇĞİÖŞÜçğıöşü]/, 'Parola en az bir harf içermelidir')
-  .regex(/\d/, 'Parola en az bir rakam içermelidir');
+  .regex(/\d/, 'Parola en az bir rakam içermelidir')
+  .refine((v) => !isKnownWeakPassword(v), { message: 'Bu parola çok yaygın veya örnek belgelerde geçiyor; başka bir parola seçin' });
 
 /** YYYY-MM-DD biçimli, gerçekten var olan tarih (boş → null). */
 export const isoDate = (label) =>
@@ -94,3 +96,9 @@ export function listQuery(sortFields, defaultSort, extra = {}) {
     ...extra,
   });
 }
+
+/** from/to tarih aralığı verilmişse başlangıç bitişten sonra olamaz. */
+export const dateRangeRule = [
+  (v) => !v.from || !v.to || v.from <= v.to,
+  { message: 'Başlangıç tarihi bitiş tarihinden sonra olamaz', path: ['from'] },
+];

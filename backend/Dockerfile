@@ -19,5 +19,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \
   CMD wget -qO- http://127.0.0.1:3000/health >/dev/null || exit 1
 
-# Her açılışta: bekleyen migration'lar → ilk kurulum verisi (idempotent) → API
+# Her açılışta: bekleyen migrationlar → ilk kurulum/güvenlik kontrolleri (idempotent, örnek veri yüklemez) → API.
+# Eksik/zayıf güvenlik ayarında API başlamaz (bkz. docs/SECURITY.md §6).
 CMD ["sh", "-c", "node src/scripts/migrate.js && node src/scripts/seed.js && exec node src/server.js"]

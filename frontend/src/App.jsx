@@ -3,6 +3,7 @@ import { matchPath, useRouter, Redirect } from './lib/router.jsx';
 import Layout from './components/Layout.jsx';
 import { Spinner } from './components/ui.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import SetupPage from './pages/SetupPage.jsx';
 import UsersPage from './pages/UsersPage.jsx';
 import DepartmentsPage from './pages/DepartmentsPage.jsx';
 import AssetsPage from './pages/AssetsPage.jsx';
@@ -15,6 +16,7 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import AlertsPage from './pages/AlertsPage.jsx';
 import ReportsPage from './pages/ReportsPage.jsx';
 import { ForbiddenPage, NotFoundPage } from './pages/StatusPages.jsx';
+import { ForcedPasswordChangePage } from './components/ChangePassword.jsx';
 
 /**
  * Rota tablosu. admin: true olan sayfalar yalnızca yöneticiye görünür.
@@ -38,7 +40,7 @@ const ROUTES = [
 ];
 
 export default function App() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, needsSetup } = useAuth();
   const { location } = useRouter();
 
   if (user === undefined) {
@@ -49,6 +51,9 @@ export default function App() {
     );
   }
 
+  // Henüz yönetici yok: kurulum ekranı (sunucu kayıtlarındaki tek kullanımlık kodla korunur).
+  if (!user && needsSetup) return <SetupPage />;
+
   if (!user) {
     if (location.pathname !== '/login') {
       const next = encodeURIComponent(location.pathname + location.search);
@@ -56,6 +61,9 @@ export default function App() {
     }
     return <LoginPage />;
   }
+
+  // Geçici/bilinen parolayla giriş yapan kullanıcı önce kendi parolasını belirler (backend de bunu zorunlu tutar).
+  if (user.must_change_password) return <ForcedPasswordChangePage />;
 
   if (location.pathname === '/login') return <Redirect to={isAdmin ? '/' : '/my-assets'} />;
 

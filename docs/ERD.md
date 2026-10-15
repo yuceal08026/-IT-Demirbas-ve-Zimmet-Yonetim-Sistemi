@@ -30,6 +30,7 @@ erDiagram
         int department_id FK "NULL olabilir"
         boolean is_active "default true"
         int token_version "default 0, JWT iptali"
+        boolean must_change_password "default false, geçici parola"
         timestamptz created_at
         timestamptz updated_at
     }
@@ -82,6 +83,7 @@ erDiagram
 ```
 
 > PRD şemasına yapılan küçük eklemeler (gerekçeli):
+> - `users.must_change_password` (migration 005): yöneticinin verdiği/sıfırladığı geçici parolada TRUE; kullanıcı kendi parolasını belirleyene kadar yalnızca `/auth/me` ve `/auth/change-password` uçlarını kullanabilir.
 > - `users.token_version`: şifre değişince / kullanıcı pasife alınınca eski JWT'leri anında geçersiz kılmak için.
 > - `users.updated_at`, `assets.updated_at`, `assets.notes`: düzenleme takibi ve serbest not.
 > - `assets.status_changed_at`: Faz 2 "uzun süredir depoda" uyarısının gerçek veriden hesaplanması için.

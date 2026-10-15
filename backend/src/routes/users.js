@@ -17,7 +17,7 @@ router.use(authenticate, requireAdmin);
 // password_hash ve token_version hiçbir yanıtta yer almaz (açık sütun listesi).
 const USER_COLUMNS = `
   u.id, u.ad_soyad, u.email, u.role, u.department_id, d.name AS department_name,
-  u.is_active, u.created_at, u.updated_at,
+  u.is_active, u.is_approved, u.self_registered, u.must_change_password, u.created_at, u.updated_at,
   (SELECT count(*) FROM assignments a WHERE a.user_id = u.id AND a.returned_at IS NULL) AS active_assignment_count`;
 
 const SORT_COLUMNS = {
@@ -34,6 +34,8 @@ const listSchema = listQuery(Object.keys(SORT_COLUMNS), 'created_at', {
   role: role.optional(),
   department_id: optionalId,
   is_active: boolFilter,
+  // Onay bekleyen kendi kendine kayıtlar ayrı listelenir; normal liste yalnızca onaylı hesapları gösterir.
+  approval: z.enum(['approved', 'pending']).default('approved'),
 });
 
 const createSchema = z.object({
@@ -83,8 +85,9 @@ async function assertNotLastAdmin(client, userId) {
 
 // GET /api/users
 router.get('/', validate({ query: listSchema }), async (req, res) => {
-  const { page, limit, search, sort, order, role: r, department_id: dep, is_active: active } = req.valid.query;
+  const { page, limit, search, sort, order, role: r, department_id: dep, is_active: active, approval } = req.valid.query;
   const w = new Where();
+  w.add(approval === 'pending' ? 'NOT u.is_approved' : 'u.is_approved');
   if (search) {
     const like = likePattern(search);
     w.add('(u.ad_soyad ILIKE ? OR u.email ILIKE ?)', like, like);
@@ -119,9 +122,10 @@ router.post('/', validate({ body: createSchema }), async (req, res) => {
   const hash = await bcrypt.hash(body.password, config.bcryptRounds);
 
   const user = await withTransaction(async (client) => {
+    // Yöneticinin belirlediği parola geçicidir: kullanıcı ilk girişte kendi parolasını belirler.
     const { rows } = await client.query(
-      `INSERT INTO users (ad_soyad, email, password_hash, role, department_id)
-       VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+      `INSERT INTO users (ad_soyad, email, password_hash, role, department_id, must_change_password)
+       VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING id`,
       [body.ad_soyad, body.email, hash, body.role, body.department_id ?? null],
     );
     const id = rows[0].id;
@@ -197,19 +201,63 @@ router.patch('/:id', validate({ params: idParam, body: updateSchema }), async (r
   res.json(updated);
 });
 
-// PATCH /api/users/:id/password — yönetici tarafından şifre sıfırlama
+// PATCH /api/users/:id/password — yönetici tarafından şifre sıfırlama.
+// Verilen parola geçicidir: kullanıcının tüm oturumları kapanır ve ilk girişte yeni parola belirlemesi istenir.
 router.patch('/:id/password', validate({ params: idParam, body: passwordSchema }), async (req, res) => {
   const { id } = req.valid.params;
   const hash = await bcrypt.hash(req.valid.body.password, config.bcryptRounds);
   await withTransaction(async (client) => {
     const { rows } = await client.query(
-      `UPDATE users SET password_hash = $1, token_version = token_version + 1, updated_at = now()
+      `UPDATE users SET password_hash = $1, must_change_password = TRUE, token_version = token_version + 1, updated_at = now()
         WHERE id = $2 RETURNING ad_soyad`,
       [hash, id],
     );
     if (!rows[0]) throw notFound('Kullanıcı bulunamadı');
+    // Kişinin bekleyen "şifremi unuttum" talebi varsa bu sıfırlamayla kapanır.
+    await client.query(
+      "UPDATE password_reset_requests SET status = 'RESOLVED', resolved_at = now(), resolved_by = $1 WHERE user_id = $2 AND status = 'PENDING'",
+      [req.user.id, id],
+    );
     await writeAudit(
       { userId: req.user.id, action: 'USER_PASSWORD_RESET', entityType: 'USER', entityId: id, details: { ad_soyad: rows[0].ad_soyad } },
+      client,
+    );
+  });
+  res.status(204).end();
+});
+
+// POST /api/users/:id/approve — kendi kaydolan kişinin hesabını açar (isteğe bağlı departman atanır).
+router.post('/:id/approve', validate({ params: idParam, body: z.object({ department_id: optionalId }) }), async (req, res) => {
+  const { id } = req.valid.params;
+  const dep = req.valid.body.department_id ?? null;
+  await assertDepartmentExists(dep);
+  const user = await withTransaction(async (client) => {
+    const { rows } = await client.query('SELECT id, ad_soyad, email, is_approved FROM users WHERE id = $1 FOR UPDATE', [id]);
+    if (!rows[0]) throw notFound('Kullanıcı bulunamadı');
+    if (rows[0].is_approved) throw conflict('ALREADY_APPROVED', 'Bu hesap zaten onaylanmış');
+    await client.query(
+      'UPDATE users SET is_approved = TRUE, department_id = COALESCE($2, department_id), updated_at = now() WHERE id = $1',
+      [id, dep],
+    );
+    await writeAudit(
+      { userId: req.user.id, action: 'USER_APPROVE', entityType: 'USER', entityId: id, details: { ad_soyad: rows[0].ad_soyad, email: rows[0].email, department_id: dep } },
+      client,
+    );
+    return getUser(id, client);
+  });
+  res.json(user);
+});
+
+// POST /api/users/:id/reject — onay bekleyen kaydı reddeder ve siler (henüz hiçbir geçmişi yoktur).
+router.post('/:id/reject', validate({ params: idParam }), async (req, res) => {
+  const { id } = req.valid.params;
+  await withTransaction(async (client) => {
+    const { rows } = await client.query('SELECT id, ad_soyad, email, is_approved FROM users WHERE id = $1 FOR UPDATE', [id]);
+    if (!rows[0]) throw notFound('Kullanıcı bulunamadı');
+    if (rows[0].is_approved) throw conflict('ALREADY_APPROVED', 'Onaylanmış hesap reddedilemez; gerekiyorsa pasife alın');
+    await client.query('DELETE FROM users WHERE id = $1', [id]);
+    await writeAudit(
+      { userId: req.user.id, action: 'USER_REJECT', entityType: 'USER', entityId: id, details: { ad_soyad: rows[0].ad_soyad, email: rows[0].email } },
       client,
     );
   });

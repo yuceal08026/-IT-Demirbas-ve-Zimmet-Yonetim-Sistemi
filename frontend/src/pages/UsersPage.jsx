@@ -5,6 +5,8 @@ import { useSearchParams } from '../lib/router.jsx';
 import { ROLE_LABELS, formatDate } from '../lib/format.js';
 import { useToast } from '../components/Toast.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import ResetRequestsPanel from '../components/ResetRequestsPanel.jsx';
+import PendingRegistrationsPanel from '../components/PendingRegistrationsPanel.jsx';
 import {
   ConfirmDialog, DataTable, EmptyState, ErrorBlock, Field, FilterSelect, Icon, LoadingBlock, Modal,
   PageHeader, Pagination, Pill, SearchInput, Spinner,
@@ -31,7 +33,7 @@ function UserFormModal({ open, user, departments, onClose, onSaved }) {
     if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) e.email = 'Geçerli bir e-posta adresi girin';
     if (!editing) {
       if (form.password.length < 8) e.password = 'Parola en az 8 karakter olmalıdır';
-      else if (!/\d/.test(form.password) || !/\D/.test(form.password)) e.password = 'Parola en az bir harf ve bir rakam içermelidir';
+      else if (!/\d/.test(form.password) || !/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(form.password)) e.password = 'Parola en az bir harf ve bir rakam içermelidir';
     }
     return e;
   }
@@ -89,7 +91,7 @@ function UserFormModal({ open, user, departments, onClose, onSaved }) {
           )}
         </Field>
         {!editing && (
-          <Field label="Geçici parola" error={errors.password} hint="En az 8 karakter; harf ve rakam içermeli." className="sm:col-span-2">
+          <Field label="Geçici parola" error={errors.password} hint="En az 8 karakter; harf ve rakam içermeli. Kişi ilk girişte kendi parolasını belirler." className="sm:col-span-2">
             {({ id, invalid, describedBy }) => (
               <input id={id} type="password" className="field-input" value={form.password} onChange={set('password')} aria-invalid={invalid} aria-describedby={describedBy} autoComplete="new-password" />
             )}
@@ -127,14 +129,14 @@ function PasswordModal({ user, onClose }) {
 
   async function submit(ev) {
     ev.preventDefault();
-    if (password.length < 8 || !/\d/.test(password) || !/\D/.test(password)) {
+    if (password.length < 8 || !/\d/.test(password) || !/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(password)) {
       setError('Parola en az 8 karakter olmalı, harf ve rakam içermelidir');
       return;
     }
     setBusy(true);
     try {
       await api.patch(`/users/${user.id}/password`, { password });
-      toast.success(`${user.ad_soyad} için yeni parola belirlendi. Açık oturumları kapatıldı.`);
+      toast.success(`${user.ad_soyad} için geçici parola belirlendi. Açık oturumları kapatıldı; ilk girişte kendi parolasını belirleyecek.`);
       onClose();
       if (user.id === me.id) logout();
     } catch (err) {
@@ -155,7 +157,7 @@ function PasswordModal({ user, onClose }) {
         </>
       )}>
       <form id="pw-form" onSubmit={submit} noValidate className="space-y-3">
-        <p className="text-sm text-ink-soft"><strong>{user?.ad_soyad}</strong> için yeni parola belirleyin. Kişinin tüm açık oturumları kapanır.</p>
+        <p className="text-sm text-ink-soft"><strong>{user?.ad_soyad}</strong> için geçici bir parola belirleyin. Kişinin tüm açık oturumları kapanır ve ilk girişte kendi parolasını belirlemesi istenir.</p>
         <Field label="Yeni parola" error={error}>
           {({ id, invalid, describedBy }) => (
             <input id={id} type="password" className="field-input" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={invalid} aria-describedby={describedBy} autoComplete="new-password" />
@@ -226,7 +228,12 @@ export default function UsersPage() {
     { key: 'role', header: 'Rol', sortKey: 'role', render: (u) => (u.role === 'ADMIN' ? <Pill tone="cobalt">Yönetici</Pill> : ROLE_LABELS[u.role]) },
     { key: 'department', header: 'Departman', sortKey: 'department', render: (u) => u.department_name || <span className="text-steel">—</span> },
     { key: 'active_assignment_count', header: 'Zimmet', className: 'text-right md:text-center', render: (u) => u.active_assignment_count },
-    { key: 'is_active', header: 'Durum', render: (u) => (u.is_active ? 'Aktif' : <Pill tone="muted">Pasif</Pill>) },
+    {
+      key: 'is_active', header: 'Durum',
+      render: (u) => (!u.is_active ? <Pill tone="muted">Pasif</Pill> : u.must_change_password
+        ? <span title="Geçici parolayla açıldı; kişi ilk girişte kendi parolasını belirleyecek.">Aktif <span className="text-sm text-steel-dark">(parola bekliyor)</span></span>
+        : 'Aktif'),
+    },
     { key: 'created_at', header: 'Eklenme', sortKey: 'created_at', hideOnMobile: true, render: (u) => formatDate(u.created_at) },
     {
       key: 'actions', header: <span className="sr-only">İşlemler</span>, className: 'text-right',
@@ -264,6 +271,9 @@ export default function UsersPage() {
             <Icon name="plus" className="size-4" />Kullanıcı ekle
           </button>
         )} />
+
+      <PendingRegistrationsPanel departments={departments.data?.data || []} onChanged={list.reload} />
+      <ResetRequestsPanel onChanged={list.reload} />
 
       <div className="panel">
         <div className="flex flex-col gap-2 border-b border-line p-3 sm:flex-row sm:flex-wrap sm:items-center">

@@ -26,6 +26,18 @@ export function onUnauthorized(fn) {
   return () => listeners.delete(fn);
 }
 
+const passwordListeners = new Set();
+/** Sunucu "önce parolanızı değiştirin" (403 PASSWORD_CHANGE_REQUIRED) dediğinde haber almak için. */
+export function onPasswordChangeRequired(fn) {
+  passwordListeners.add(fn);
+  return () => passwordListeners.delete(fn);
+}
+
+function notifyAuthProblem(status, code, skipAuthRedirect) {
+  if (status === 401 && !skipAuthRedirect) listeners.forEach((fn) => fn());
+  if (status === 403 && code === 'PASSWORD_CHANGE_REQUIRED') passwordListeners.forEach((fn) => fn());
+}
+
 function toQuery(params) {
   if (!params) return '';
   const qs = new URLSearchParams();
@@ -56,7 +68,7 @@ async function request(method, path, { body, params, skipAuthRedirect = false } 
 
   if (!response.ok) {
     const err = data?.error || {};
-    if (response.status === 401 && !skipAuthRedirect) listeners.forEach((fn) => fn());
+    notifyAuthProblem(response.status, err.code, skipAuthRedirect);
     throw new ApiError(
       response.status,
       err.code || 'HTTP_ERROR',
@@ -76,9 +88,15 @@ export const api = {
 
 /** Dosya indirme (CSV vb.) — cookie ile yetkili istek, sonra tarayıcıya kaydettirme. */
 export async function downloadFile(path, params, fallbackName) {
-  const response = await fetch(`/api${path}${toQuery(params)}`, { credentials: 'same-origin' });
+  let response;
+  try {
+    response = await fetch(`/api${path}${toQuery(params)}`, { credentials: 'same-origin' });
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', 'Sunucuya ulaşılamıyor. Bağlantınızı kontrol edip tekrar deneyin.');
+  }
   if (!response.ok) {
     const data = await response.json().catch(() => null);
+    notifyAuthProblem(response.status, data?.error?.code, false);
     throw new ApiError(response.status, data?.error?.code, data?.error?.message || 'Dosya indirilemedi');
   }
   const blob = await response.blob();

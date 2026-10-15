@@ -14,7 +14,7 @@ router.use(authenticate, requireAdmin);
  * Garanti: total = active + in_stock + defective.
  */
 router.get('/stats', async (req, res) => {
-  const [assets, users, byCategory, byDepartment, recent, alerts] = await Promise.all([
+  const [assets, users, byCategory, byDepartment, recent, alerts, resetRequests, pendingUsers] = await Promise.all([
     query(`
       SELECT count(*) FILTER (WHERE is_active)                           AS total,
              count(*) FILTER (WHERE is_active AND status = 'ACTIVE')     AS active,
@@ -22,7 +22,7 @@ router.get('/stats', async (req, res) => {
              count(*) FILTER (WHERE is_active AND status = 'DEFECTIVE')  AS defective,
              count(*) FILTER (WHERE NOT is_active)                       AS inactive
         FROM assets`),
-    query('SELECT count(*) AS total, count(*) FILTER (WHERE is_active) AS active FROM users'),
+    query('SELECT count(*) AS total, count(*) FILTER (WHERE is_active) AS active FROM users WHERE is_approved'),
     query(`
       SELECT category,
              count(*)                                       AS total,
@@ -47,6 +47,8 @@ router.get('/stats', async (req, res) => {
        WHERE l.entity_type = 'ASSET'
        ORDER BY l."timestamp" DESC, l.id DESC LIMIT 8`),
     alertCounts(),
+    query("SELECT count(*) AS n FROM password_reset_requests WHERE status = 'PENDING'"),
+    query('SELECT count(*) AS n FROM users WHERE NOT is_approved'),
   ]);
 
   res.set('Cache-Control', 'no-store');
@@ -57,6 +59,8 @@ router.get('/stats', async (req, res) => {
     by_department: byDepartment.rows,
     recent_activity: recent.rows.map(presentAudit),
     alerts,
+    pending_password_requests: resetRequests.rows[0].n,
+    pending_registrations: pendingUsers.rows[0].n,
     generated_at: new Date().toISOString(),
   });
 });

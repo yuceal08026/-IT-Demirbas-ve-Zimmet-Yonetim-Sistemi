@@ -2,6 +2,7 @@ import { Router } from 'express';
 import QRCode from 'qrcode';
 import { z } from 'zod';
 import { query, withTransaction } from '../db.js';
+import { todayInAppTimezone } from '../config.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
 import {
   validate, idParam, listQuery, trimmed, optionalText, isoDate, optionalId, boolFilter,
@@ -45,7 +46,8 @@ const listSchema = listQuery(Object.keys(SORT_COLUMNS), 'created_at', {
   is_active: boolFilter,
 });
 
-const today = () => new Date().toISOString().slice(0, 10);
+// "Bugün" kurumun saat dilimine göre hesaplanır (UTC'ye göre değil): gece yarısından sonra girilen bugünkü alım tarihi reddedilmez.
+const today = () => todayInAppTimezone();
 
 // Seri numaraları karşılaştırmada büyük/küçük harf farkı yaratmasın diye büyük harfe çevrilir.
 const serial = trimmed('Seri numarası', 2, 100)

@@ -16,6 +16,12 @@ export function formatDateTime(value) {
   return Number.isNaN(d.getTime()) ? '—' : dateTimeFmt.format(d);
 }
 
+/** Tarayıcının yerel saatine göre bugünün tarihi (YYYY-AA-GG). toISOString() UTC verdiği için gece yarısından sonra bir gün geride kalır. */
+export function todayLocalIso() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** Bugünden itibaren gün farkı (pozitif = gelecekte). */
 export function daysFromToday(value) {
   if (!value) return null;
@@ -49,6 +55,15 @@ export const ACTION_LABELS = {
   USER_CREATE: 'Kullanıcı oluşturdu',
   USER_UPDATE: 'Kullanıcıyı güncelledi',
   USER_PASSWORD_RESET: 'Şifre sıfırladı',
+  USER_PASSWORD_CHANGE: 'Parolasını değiştirdi',
+  PASSWORD_RESET_REQUEST: 'Parola sıfırlama talebi',
+  PASSWORD_RESET_REJECT: 'Parola talebini reddetti',
+  USER_REGISTER: 'Kaydoldu',
+  USER_APPROVE: 'Kaydı onayladı',
+  USER_REJECT: 'Kaydı reddetti',
+  USER_PASSWORD_RECOVER: 'Parolasını kurtarma koduyla yeniledi',
+  PASSWORD_RECOVER_FAILED: 'Hatalı kurtarma kodu denemesi',
+  RECOVERY_CODE_RENEW: 'Kurtarma kodunu yeniledi',
   USER_DEACTIVATE: 'Kullanıcıyı pasife aldı',
   USER_ACTIVATE: 'Kullanıcıyı aktifleştirdi',
   USER_DELETE: 'Kullanıcıyı sildi',

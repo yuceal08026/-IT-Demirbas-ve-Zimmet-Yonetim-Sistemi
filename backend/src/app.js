@@ -17,12 +17,15 @@ import dashboardRouter from './routes/dashboard.js';
 import alertsRouter from './routes/alerts.js';
 import maintenanceRouter, { assetMaintenanceRouter } from './routes/maintenance.js';
 import reportsRouter from './routes/reports.js';
+import setupRouter from './routes/setup.js';
+import passwordResetRouter from './routes/passwordReset.js';
 
 export function createApp() {
   const app = express();
 
   // nginx arkasında çalışırken gerçek istemci IP'si (rate limit için) X-Forwarded-For'dan alınır.
-  app.set('trust proxy', 1);
+  // Yalnızca güvenilen (varsayılan: yerel/özel ağdaki) vekillerin başlığına inanılır; bkz. TRUST_PROXY.
+  app.set('trust proxy', config.trustProxy);
   app.disable('x-powered-by');
 
   app.use(helmet());
@@ -37,7 +40,9 @@ export function createApp() {
   app.use('/health', healthRouter);
 
   app.use('/api', requireJsonBody);
+  app.use('/api/setup', setupRouter);
   app.use('/api/auth', authRouter);
+  app.use('/api/password-reset-requests', passwordResetRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/departments', departmentsRouter);
   app.use('/api/assets', assetsRouter);

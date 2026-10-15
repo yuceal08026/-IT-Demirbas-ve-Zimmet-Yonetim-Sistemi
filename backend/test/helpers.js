@@ -76,20 +76,30 @@ export function client() {
   };
 }
 
+export const ADMIN_EMAIL = 'admin@test.local';
+export const ADMIN_PASSWORD = 'Test-Yonetici-2026';
+/** Yöneticinin yeni kullanıcıya verdiği geçici parola ve kullanıcının ilk girişte belirlediği kalıcı parola. */
+export const TEMP_PASSWORD = 'Gecici-Parola-42';
+export const OWN_PASSWORD = 'Kendi-Parolam-73';
+
 export async function adminClient() {
   const c = client();
-  await c.login('admin@test.local', 'Admin12345');
+  await c.login(ADMIN_EMAIL, ADMIN_PASSWORD);
   return c;
 }
 
 let userSeq = 0;
-/** Admin istemcisiyle yeni personel oluşturur ve onunla giriş yapmış bir istemci döner. */
-export async function createUserClient(admin, overrides = {}) {
+/**
+ * Admin istemcisiyle yeni personel oluşturur ve onunla giriş yapmış bir istemci döner.
+ * Yöneticinin verdiği parola geçicidir; kullanıcı gerçek akıştaki gibi ilk girişte kendi parolasını belirler
+ * (keepTemporaryPassword: true verilirse bu adım atlanır).
+ */
+export async function createUserClient(admin, overrides = {}, { keepTemporaryPassword = false } = {}) {
   userSeq += 1;
   const payload = {
     ad_soyad: `Personel ${userSeq}`,
     email: `personel${userSeq}-${Date.now()}@test.local`,
-    password: 'Personel123',
+    password: TEMP_PASSWORD,
     role: 'USER',
     ...overrides,
   };
@@ -97,7 +107,10 @@ export async function createUserClient(admin, overrides = {}) {
   if (r.status !== 201) throw new Error(`user create failed ${r.status} ${JSON.stringify(r.body)}`);
   const c = client();
   await c.login(payload.email, payload.password);
-  return { client: c, user: r.body, password: payload.password };
+  if (keepTemporaryPassword) return { client: c, user: r.body, password: payload.password };
+  const ch = await c.post('/api/auth/change-password', { current_password: payload.password, new_password: OWN_PASSWORD });
+  if (ch.status !== 200) throw new Error(`password change failed ${ch.status} ${JSON.stringify(ch.body)}`);
+  return { client: c, user: r.body, password: OWN_PASSWORD };
 }
 
 export { query };

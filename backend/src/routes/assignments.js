@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { query, withTransaction } from '../db.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
-import { validate, idParam, listQuery, optionalText, optionalId, isoDate } from '../middleware/validate.js';
+import { validate, idParam, listQuery, optionalText, optionalId, isoDate, dateRangeRule } from '../middleware/validate.js';
 import { Where, likePattern, paginated } from '../utils/sql.js';
 import { ASSIGNMENT_SELECT, assignAsset, presentAssignment, returnAssignment } from '../services/assignments.js';
 
@@ -15,7 +15,7 @@ export const assignmentListSchema = listQuery(Object.keys(SORT_COLUMNS), 'assign
   department_id: optionalId,
   from: isoDate('Başlangıç tarihi'),
   to: isoDate('Bitiş tarihi'),
-});
+}).refine(...dateRangeRule);
 
 /** Zimmet listesini filtreleyip sayfalar. forceUserId verilirse sorgu o kullanıcıya sabitlenir (IDOR koruması). */
 export async function listAssignments(q, { forceUserId, defaultActive = 'all' } = {}) {

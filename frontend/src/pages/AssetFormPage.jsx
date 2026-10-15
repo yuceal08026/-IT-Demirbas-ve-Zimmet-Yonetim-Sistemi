@@ -4,9 +4,10 @@ import { useApi, useTitle } from '../lib/hooks.js';
 import { Link, useNavigate } from '../lib/router.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { AssetTag, ErrorBlock, Field, LoadingBlock, PageHeader, Spinner } from '../components/ui.jsx';
+import { todayLocalIso } from '../lib/format.js';
 
 const EMPTY = { category: '', brand: '', model: '', serial_number: '', purchase_date: '', warranty_end_date: '', notes: '' };
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = todayLocalIso;
 
 /** İstemci tarafı ön kontrol — aynı kurallar backend'de zod ile tekrar doğrulanır. */
 function validate(f) {

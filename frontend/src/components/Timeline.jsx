@@ -28,13 +28,28 @@ export function describe(entry) {
     case 'LOGIN':
       return d.ip ? `IP: ${d.ip}` : '';
     case 'LOGIN_FAILED':
-      return `${d.email || ''}: ${{ unknown_email: 'kayıtlı olmayan e-posta', wrong_password: 'hatalı parola', inactive: 'pasif hesap' }[d.reason] || 'reddedildi'}${d.ip ? ` (IP: ${d.ip})` : ''}`;
+      return `${d.email || ''}: ${{ unknown_email: 'kayıtlı olmayan e-posta', wrong_password: 'hatalı parola', inactive: 'pasif hesap', wrong_portal: 'yanlış giriş sekmesi', pending_approval: 'onay bekleyen hesap' }[d.reason] || 'reddedildi'}${d.ip ? ` (IP: ${d.ip})` : ''}`;
     case 'USER_CREATE':
-      return `${d.email || ''}, rol: ${d.role === 'ADMIN' ? 'Yönetici' : 'Personel'}`;
+      return `${d.email || ''}, rol: ${d.role === 'ADMIN' ? 'Yönetici' : 'Personel'}${{ cli: ' (sunucu komutuyla)', 'initial-setup': ' (ilk kurulum ayarıyla)', 'web-setup': ' (tarayıcıdan ilk kurulum)' }[d.via] || ''}`;
+    case 'USER_PASSWORD_CHANGE':
+    case 'PASSWORD_RESET_REQUEST':
+    case 'USER_PASSWORD_RECOVER':
+    case 'RECOVERY_CODE_RENEW':
+      return d.ad_soyad || '';
+    case 'USER_REGISTER':
+    case 'USER_APPROVE':
+    case 'USER_REJECT':
+    case 'PASSWORD_RECOVER_FAILED':
+      return [d.ad_soyad, d.email].filter(Boolean).join(', ');
     case 'USER_DELETE':
     case 'ASSET_DELETE':
     case 'USER_PASSWORD_RESET':
-      return [d.ad_soyad, d.email, d.brand && `${d.brand} ${d.model}`, d.serial_number && `SN ${d.serial_number}`].filter(Boolean).join(', ');
+      return [
+        d.ad_soyad, d.email, d.brand && `${d.brand} ${d.model}`, d.serial_number && `SN ${d.serial_number}`,
+        d.reason === 'legacy_demo_password_invalidated' && 'eski örnek hesabın bilinen parolası geçersiz kılındı',
+        d.via === 'cli' && 'sunucu komutuyla',
+        d.via === 'reset-request' && '"şifremi unuttum" talebi üzerine',
+      ].filter(Boolean).join(', ');
     case 'MAINTENANCE_OPEN':
       return [d.issue_description && `Arıza: ${d.issue_description}`, d.changes?.status && 'cihaz arızalı olarak işaretlendi']
         .filter(Boolean).join('; ');

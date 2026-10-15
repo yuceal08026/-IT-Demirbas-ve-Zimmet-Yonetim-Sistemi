@@ -56,7 +56,33 @@ Ortak sorgu parametreleri: `page` (≥1, varsayılan 1), `limit` (1–100, varsa
 |-------|-----|-------|---------------|
 | POST | `/api/auth/login` | Herkes (rate limited) | `{email, password, issueToken?}` → `200 {user, expiresIn}` + `httpOnly` cookie. `issueToken: true` (mobil/API istemcisi) gönderilirse yanıta `token` da eklenir; web istemcisi token'ı hiç görmez. Pasif kullanıcı → `401 INVALID_CREDENTIALS` |
 | POST | `/api/auth/logout` | Herkes (idempotent) | Cookie temizlenir → `204` |
-| GET | `/api/auth/me` | Auth | `{id, ad_soyad, email, role, department}` |
+| GET | `/api/auth/me` | Auth (parola değişikliği bekleyen kullanıcı da) | `{id, ad_soyad, email, role, department, must_change_password}` |
+| POST | `/api/auth/change-password` | Auth (parola değişikliği bekleyen kullanıcı da; ayrı rate limit) | `{current_password, new_password}` → `200 {user}` + yeni cookie (Bearer ile çağrıldıysa gövdede yeni `token`). Diğer tüm oturumlar kapanır. Hatalı mevcut parola / zayıf / aynı parola → `400` |
+
+| POST | `/api/auth/forgot-password` | Herkes (rate limited) | `{email}` → her durumda `202 {message}`. Kayıtlı aktif kullanıcıysa yöneticiye talep açılır (bekleyen talep varsa yenisi açılmaz) |
+| GET | `/api/setup/status` | Herkes | `{needs_setup}` — hiç aktif yönetici yoksa `true` (kurulum kodu sunucu kayıtlarına yazılır) |
+| POST | `/api/setup/admin` | Herkes, yalnızca kurulum gerekiyorken (rate limited) | `{setup_code, ad_soyad, email, password}` → `201 {user}` + cookie. Hatalı kod `403 INVALID_SETUP_CODE`, kurulum yapılmışsa `409 SETUP_DONE` |
+
+| GET | `/api/auth/registration` | Herkes | `{enabled, domains}` |
+| POST | `/api/auth/register` | Herkes (rate limited) | `{ad_soyad, email, password}`; yalnızca izinli alan adları. `201 {recovery_code, message}`; hesap onaylanana kadar girişte `403 ACCOUNT_PENDING` |
+| POST | `/api/auth/recover` | Herkes (rate limited) | `{email, recovery_code, new_password}` → `200 {recovery_code (yeni), message}`; hatalı → `400 INVALID_RECOVERY`. Tüm oturumlar kapanır |
+| POST | `/api/auth/recovery-code` | Auth (ayrı rate limit) | `{current_password}` → yeni `recovery_code`, eskisi geçersiz |
+| POST | `/api/users/:id/approve` | Yönetici | `{department_id?}` onay bekleyen kaydı açar |
+| POST | `/api/users/:id/reject` | Yönetici | Onay bekleyen kaydı siler |
+
+`GET /api/users` varsayılan olarak yalnızca onaylı hesapları listeler; `?approval=pending` onay bekleyenleri döner.
+
+Login gövdesinde isteğe bağlı `portal: 'ADMIN' | 'USER'` (giriş ekranındaki sekme): rol uyuşmazsa `403 WRONG_PORTAL`, oturum açılmaz.
+
+### Parola sıfırlama talepleri — `/api/password-reset-requests` (yalnızca yönetici)
+
+| Metot | Yol | Açıklama |
+|-------|-----|----------|
+| GET | `/` | `?status=PENDING` (varsayılan) / `RESOLVED` / `REJECTED` / `all` |
+| POST | `/:id/resolve` | `{password}` geçici parola atar (kişi ilk girişte değiştirir), talebi kapatır → `204` |
+| POST | `/:id/reject` | Talebi reddeder, parola değişmez → `204` |
+
+`must_change_password = true` olan kullanıcı (yöneticinin verdiği geçici parola) yukarıdaki iki uç dışında her yerde `403 PASSWORD_CHANGE_REQUIRED` alır.
 
 `user` nesnesi hiçbir yanıtta `password_hash` veya `token_version` içermez.
 

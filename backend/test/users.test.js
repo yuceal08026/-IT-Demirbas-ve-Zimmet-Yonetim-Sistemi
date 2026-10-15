@@ -15,9 +15,9 @@ describe('Kullanıcı ve departman yönetimi (Aşama 3)', () => {
     const calls = [
       u.get('/api/users'),
       u.get(`/api/users/${user.id}`),
-      u.post('/api/users', { ad_soyad: 'X Y', email: 'x@test.local', password: 'Parola123' }),
+      u.post('/api/users', { ad_soyad: 'X Y', email: 'x@test.local', password: 'Gecerli-Parola-9' }),
       u.patch(`/api/users/${user.id}`, { role: 'ADMIN' }),
-      u.patch(`/api/users/${user.id}/password`, { password: 'Parola123' }),
+      u.patch(`/api/users/${user.id}/password`, { password: 'Gecerli-Parola-9' }),
       u.delete(`/api/users/${user.id}`),
       u.get('/api/departments'),
       u.post('/api/departments', { name: 'Hack' }),
@@ -33,7 +33,7 @@ describe('Kullanıcı ve departman yönetimi (Aşama 3)', () => {
 
   it('kullanıcı oluşturur; parola bcrypt ile özetlenir, yanıtta hash yoktur', async () => {
     const r = await admin.post('/api/users', {
-      ad_soyad: '  Deniz Aydın ', email: 'Deniz.Aydin@Test.local', password: 'Parola123', role: 'USER',
+      ad_soyad: '  Deniz Aydın ', email: 'Deniz.Aydin@Test.local', password: 'Gecerli-Parola-9', role: 'USER',
     });
     assert.equal(r.status, 201);
     assert.equal(r.body.ad_soyad, 'Deniz Aydın');
@@ -41,13 +41,13 @@ describe('Kullanıcı ve departman yönetimi (Aşama 3)', () => {
     assert.equal(r.body.password_hash, undefined);
     assert.equal(r.body.token_version, undefined);
     const { rows } = await query('SELECT password_hash FROM users WHERE id = $1', [r.body.id]);
-    assert.notEqual(rows[0].password_hash, 'Parola123');
+    assert.notEqual(rows[0].password_hash, 'Gecerli-Parola-9');
     assert.match(rows[0].password_hash, /^\$2[aby]\$/);
   });
 
   it('aynı e-posta (büyük/küçük harf farkıyla) ikinci kez eklenemez', async () => {
-    await admin.post('/api/users', { ad_soyad: 'Can Er', email: 'can@test.local', password: 'Parola123' });
-    const r = await admin.post('/api/users', { ad_soyad: 'Can Er 2', email: 'CAN@test.local', password: 'Parola123' });
+    await admin.post('/api/users', { ad_soyad: 'Can Er', email: 'can@test.local', password: 'Gecerli-Parola-9' });
+    const r = await admin.post('/api/users', { ad_soyad: 'Can Er 2', email: 'CAN@test.local', password: 'Gecerli-Parola-9' });
     assert.equal(r.status, 409);
     assert.equal(r.body.error.code, 'DUPLICATE_EMAIL');
   });
@@ -58,13 +58,13 @@ describe('Kullanıcı ve departman yönetimi (Aşama 3)', () => {
     assert.ok(weak.body.error.details.some((d) => d.field === 'password'));
     const noDigit = await admin.post('/api/users', { ad_soyad: 'Ali Veli', email: 'ali@test.local', password: 'sadeceharf' });
     assert.equal(noDigit.status, 400);
-    const badRole = await admin.post('/api/users', { ad_soyad: 'Ali Veli', email: 'ali@test.local', password: 'Parola123', role: 'ROOT' });
+    const badRole = await admin.post('/api/users', { ad_soyad: 'Ali Veli', email: 'ali@test.local', password: 'Gecerli-Parola-9', role: 'ROOT' });
     assert.equal(badRole.status, 400);
   });
 
   it('listede arama, filtre, sıralama ve sayfalama birlikte çalışır', async () => {
     for (let i = 0; i < 5; i++) {
-      await admin.post('/api/users', { ad_soyad: `Sayfa Testi ${i}`, email: `sayfa${i}@test.local`, password: 'Parola123' });
+      await admin.post('/api/users', { ad_soyad: `Sayfa Testi ${i}`, email: `sayfa${i}@test.local`, password: 'Gecerli-Parola-9' });
     }
     const p1 = await admin.get('/api/users?search=sayfa%20testi&sort=ad_soyad&order=asc&limit=2&page=1&role=USER');
     assert.equal(p1.status, 200);
@@ -91,12 +91,12 @@ describe('Kullanıcı ve departman yönetimi (Aşama 3)', () => {
   });
 
   it('rol değişikliği anında etkili olur (rol DB\'den okunur)', async () => {
-    const { client: u, user } = await createUserClient(admin);
+    const { client: u, user, password } = await createUserClient(admin);
     assert.equal((await u.get('/api/users')).status, 403);
     await admin.patch(`/api/users/${user.id}`, { role: 'ADMIN' });
     // Rol değişince oturum düşer; yeniden giriş yapınca yönetici yetkisi gelir.
     assert.equal((await u.get('/api/users')).status, 401);
-    await u.login(user.email, 'Personel123');
+    await u.login(user.email, password);
     assert.equal((await u.get('/api/users')).status, 200);
   });
 
@@ -114,7 +114,7 @@ describe('Kullanıcı ve departman yönetimi (Aşama 3)', () => {
     assert.equal(d.status, 201);
     assert.equal((await admin.post('/api/departments', { name: 'Arge' })).body.error.code, 'DUPLICATE_DEPARTMENT');
 
-    const ghost = await admin.post('/api/users', { ad_soyad: 'Hayalet', email: 'hayalet@test.local', password: 'Parola123', department_id: 99999 });
+    const ghost = await admin.post('/api/users', { ad_soyad: 'Hayalet', email: 'hayalet@test.local', password: 'Gecerli-Parola-9', department_id: 99999 });
     assert.equal(ghost.status, 400);
 
     const { user } = await createUserClient(admin, { department_id: d.body.id });

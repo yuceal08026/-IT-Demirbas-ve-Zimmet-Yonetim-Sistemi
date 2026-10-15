@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { query } from '../db.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
-import { validate, listQuery, optionalId, isoDate } from '../middleware/validate.js';
+import { validate, listQuery, optionalId, isoDate, dateRangeRule } from '../middleware/validate.js';
 import { Where, likePattern, paginated } from '../utils/sql.js';
 
 /**
@@ -67,7 +67,7 @@ export const auditListSchema = listQuery(['timestamp'], 'timestamp', {
   action_type: z.string().trim().regex(/^[A-Z_]{2,50}$/, 'Geçersiz işlem tipi').optional(),
   from: isoDate('Başlangıç tarihi'),
   to: isoDate('Bitiş tarihi'),
-});
+}).refine(...dateRangeRule);
 
 const router = Router();
 router.use(authenticate, requireAdmin);

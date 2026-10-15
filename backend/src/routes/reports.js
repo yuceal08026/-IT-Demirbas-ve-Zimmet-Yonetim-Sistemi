@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { query } from '../db.js';
+import { config, todayInAppTimezone } from '../config.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
-import { validate, optionalId, isoDate } from '../middleware/validate.js';
+import { validate, optionalId, isoDate, dateRangeRule } from '../middleware/validate.js';
 import { Where } from '../utils/sql.js';
 
 /**
@@ -12,9 +13,9 @@ import { Where } from '../utils/sql.js';
 
 const STATUS_TR = { ACTIVE: 'Zimmetli', IN_STOCK: 'Depoda', DEFECTIVE: 'Arızalı' };
 
-// Raporlardaki tarih-saatler kurumun saat diliminde yazılır (REPORT_TIMEZONE, varsayılan Europe/Istanbul).
+// Raporlardaki tarih-saatler kurumun saat diliminde yazılır (APP_TIMEZONE / REPORT_TIMEZONE, varsayılan Europe/Istanbul).
 const dateTimeFmt = new Intl.DateTimeFormat('sv-SE', {
-  timeZone: process.env.REPORT_TIMEZONE || 'Europe/Istanbul',
+  timeZone: config.timezone,
   year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit',
 });
 
@@ -32,7 +33,7 @@ export function toCsv(headers, rows) {
 }
 
 function sendCsv(res, name, csv) {
-  const stamp = new Date().toISOString().slice(0, 10);
+  const stamp = todayInAppTimezone();
   res.set('Cache-Control', 'no-store');
   res.attachment(`${name}-${stamp}.csv`);
   res.type('text/csv; charset=utf-8').send(csv);
@@ -47,14 +48,14 @@ const assetReportSchema = z.object({
   from: isoDate('Başlangıç tarihi'),
   to: isoDate('Bitiş tarihi'),
   include_inactive: z.enum(['true', 'false']).optional(),
-});
+}).refine(...dateRangeRule);
 
 const assignmentReportSchema = z.object({
   active: z.enum(['true', 'false', 'all']).optional(),
   department_id: optionalId,
   from: isoDate('Başlangıç tarihi'),
   to: isoDate('Bitiş tarihi'),
-});
+}).refine(...dateRangeRule);
 
 export async function assetReportRows(q) {
   const w = new Where();

@@ -61,12 +61,13 @@ export async function assignAsset(client, { assetId, userId, note, actorId }) {
 
   // FOR SHARE: zimmet sürerken kullanıcının eşzamanlı olarak pasife alınmasını engeller.
   const { rows: users } = await client.query(
-    'SELECT id, ad_soyad, is_active FROM users WHERE id = $1 FOR SHARE',
+    'SELECT id, ad_soyad, is_active, is_approved FROM users WHERE id = $1 FOR SHARE',
     [userId],
   );
   const user = users[0];
   if (!user) throw badRequest('Seçilen personel bulunamadı', [{ field: 'user_id', message: 'Seçilen personel bulunamadı' }]);
   if (!user.is_active) throw conflict('USER_INACTIVE', 'Pasif kullanıcıya zimmet yapılamaz');
+  if (!user.is_approved) throw conflict('USER_NOT_APPROVED', 'Kaydı henüz onaylanmamış kişiye zimmet yapılamaz');
 
   const { rows } = await client.query(
     `INSERT INTO assignments (asset_id, user_id, assigned_by, note) VALUES ($1, $2, $3, $4) RETURNING id`,

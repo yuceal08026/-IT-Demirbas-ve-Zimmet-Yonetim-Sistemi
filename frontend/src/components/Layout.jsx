@@ -3,6 +3,7 @@ import { Link, useRouter } from '../lib/router.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { ROLE_LABELS } from '../lib/format.js';
 import { Icon } from './ui.jsx';
+import { ChangePasswordModal, RecoveryCodeModal } from './ChangePassword.jsx';
 
 const NAV_ICONS = {
   overview: 'M3.5 3.5h5v6h-5zM11.5 3.5h5v3.5h-5zM11.5 10h5v6.5h-5zM3.5 12.5h5v4h-5z',
@@ -75,16 +76,28 @@ function NavList({ onNavigate }) {
 
 function UserBox() {
   const { user, logout } = useAuth();
+  const [pwOpen, setPwOpen] = useState(false);
+  const [rcOpen, setRcOpen] = useState(false);
   return (
     <div className="border-t border-white/10 pt-4">
       <p className="truncate font-semibold text-white">{user.ad_soyad}</p>
       <p className="truncate text-sm text-white/60">
         {ROLE_LABELS[user.role]}{user.department ? `, ${user.department.name}` : ''}
       </p>
+      <button type="button" onClick={() => setPwOpen(true)}
+        className="mt-3 w-full rounded-md px-3 py-1.5 text-left text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white">
+        Parolamı değiştir
+      </button>
+      <button type="button" onClick={() => setRcOpen(true)}
+        className="w-full rounded-md px-3 py-1.5 text-left text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white">
+        Kurtarma kodu{!user.has_recovery_code && <span className="ml-1.5 rounded-full bg-warn-tint px-1.5 text-[12px] text-warn">oluşturun</span>}
+      </button>
       <button type="button" onClick={logout}
-        className="mt-3 w-full rounded-md border border-white/20 px-3 py-1.5 text-sm font-semibold text-white/90 hover:bg-white/10">
+        className="mt-1 w-full rounded-md border border-white/20 px-3 py-1.5 text-sm font-semibold text-white/90 hover:bg-white/10">
         Çıkış yap
       </button>
+      <ChangePasswordModal open={pwOpen} onClose={() => setPwOpen(false)} />
+      <RecoveryCodeModal open={rcOpen} onClose={() => setRcOpen(false)} />
     </div>
   );
 }

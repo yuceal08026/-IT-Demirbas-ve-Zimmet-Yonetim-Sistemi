@@ -20,8 +20,12 @@ Rol bilgisi JWT'den değil, her istekte **DB'deki güncel kullanıcıdan** alın
 |----------|:-----:|:----:|-----------|
 | `GET /health` | ✅ | ✅ | — |
 | `POST /api/auth/login` | ✅ | ✅ | `loginRateLimit`, `validate` |
-| `POST /api/auth/logout` | ✅ | ✅ | `authenticate` |
-| `GET /api/auth/me` | ✅ | ✅ | `authenticate` |
+| `POST /api/auth/logout` | ✅ | ✅ | — (idempotent, yalnızca cookie'yi siler) |
+| `GET /api/auth/me` | ✅ | ✅ | `authenticateAllowPasswordChange` |
+| `POST /api/auth/change-password` | ✅ (kendi) | ✅ (kendi) | `passwordChangeRateLimit`, `authenticateAllowPasswordChange`, `validate` |
+| `POST /api/auth/forgot-password` | ✅ | ✅ | `forgotRateLimit`, `validate` (oturum gerekmez) |
+| `GET /api/setup/status`, `POST /api/setup/admin` | — | — | Oturum gerekmez; yalnızca hiç aktif yönetici yokken ve kurulum koduyla |
+| `* /api/password-reset-requests/**` | ✅ | ❌ 403 | `authenticate`, `requireRole('ADMIN')` |
 | `* /api/users/**` | ✅ | ❌ 403 | `authenticate`, `requireRole('ADMIN')` |
 | `* /api/departments/**` | ✅ | ❌ 403 | `authenticate`, `requireRole('ADMIN')` |
 | `GET /api/assets` (liste) | ✅ | ❌ 403 | `authenticate`, `requireRole('ADMIN')` |

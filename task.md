@@ -355,3 +355,18 @@ Her aşama bittiğinde doldur:
 - **Doğrulama:** `docker compose config` geçerli. Konteyner açılış komutu (`migrate → seed → server`) `NODE_ENV=production` ile boş veritabanında birebir çalıştırıldı; ikinci çalıştırmada veri çoğalmadı. 60 backend testi geçti. Tüm ekranlar yönetici ve personel olarak gezildi, tarayıcı hatası yok.
 - **Kalan:** Bu geliştirme ortamında Docker daemon ve npm kayıt sunucusu erişimi olmadığından gerçek `docker compose up --build` ve `npm install` burada çalıştırılamadı. İlk çalıştırmayı Docker kurulu bir makinede yapıp oluşan `package-lock.json` dosyalarını commit edin. Public depoya gönderme.
 - **Sıradaki adım:** (Opsiyonel) Aşama 9 — Mobil uygulama
+
+---
+
+## Bakım: demo verinin kaldırılması ve güvenlik sıkılaştırması (2026-10)
+
+- Örnek (demo) veri yükleme tamamen kaldırıldı; uygulama boş veritabanıyla başlar. `SEED_DEMO_DATA` yok sayılır.
+- Varsayılan yönetici parolası kaldırıldı. İlk yönetici: `npm run create-admin` (veya bir kez `INITIAL_ADMIN_*`). Var olan kullanıcı sessizce yöneticiye yükseltilmez.
+- Üretimde eksik/zayıf `JWT_SECRET`, bilinen veritabanı parolası, https'te güvensiz cookie veya varsayılan parolalı yönetici varsa API başlamaz. Compose `.env` olmadan başlamaz.
+- `005_password_change.sql`: geçici parola (`must_change_password`); `POST /api/auth/change-password`; arayüzde "Parolamı değiştir" ve zorunlu ilk parola ekranı.
+- Eski kurulumlarda veri silinmeden: demo personel parolası geçersiz kılınır, varsayılan parolalı yönetici için kurtarma komutu önerilir.
+- Saat dilimi düzeltmesi: "bugün" ve tarih filtreleri kurum saatine göre (`APP_TIMEZONE`); başlangıç > bitiş tarih aralıkları anlaşılır hatayla reddedilir.
+- `TRUST_PROXY` varsayılanı: yalnızca yerel/özel ağ vekilleri.
+- Yeni testler: `setup-security.test.js`, `password-change.test.js`, `integrity.test.js`.
+- Giriş ekranı: "Personel girişi" / "Yönetici girişi" sekmeleri (yanlış sekmede `WRONG_PORTAL`), "Şifremi unuttum" → yöneticiye talep (`006_password_reset_requests.sql`), tarayıcıdan ilk kurulum ekranı (sunucu kayıtlarındaki tek kullanımlık kodla). Test: `login-reset-setup.test.js`.
+- Kendi kendine kayıt (yalnızca kurum alan adı, yönetici onaylı) ve e-postasız parola kurtarma (kurtarma kodu) (`007_registration_recovery.sql`). Test: `register-recover.test.js`.

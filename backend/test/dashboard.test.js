@@ -1,6 +1,7 @@
 import { useTestServer, adminClient, createUserClient, query } from './helpers.js';
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
+import { todayInAppTimezone } from '../src/config.js';
 
 useTestServer();
 
@@ -11,7 +12,8 @@ const mk = async (admin, over = {}) => (await admin.post('/api/assets', {
 })).body;
 
 const iso = (d) => d.toISOString().slice(0, 10);
-const inDays = (k) => { const d = new Date(); d.setDate(d.getDate() + k); return iso(d); };
+// "Bugün" uygulamanın saat dilimine göre (veritabanı oturumu da aynı dilimde çalışır); test saatinden bağımsızdır.
+const inDays = (k) => { const d = new Date(`${todayInAppTimezone()}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + k); return iso(d); };
 
 async function dbCounts() {
   const { rows } = await query(`

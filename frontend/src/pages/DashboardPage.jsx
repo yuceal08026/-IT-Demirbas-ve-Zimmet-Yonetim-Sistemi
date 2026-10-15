@@ -240,6 +240,18 @@ export default function DashboardPage() {
       {stats.error && <ErrorBlock error={stats.error} onRetry={stats.reload} />}
       {!stats.data ? (stats.loading && <LoadingBlock />) : (
         <div className="space-y-6">
+          {stats.data.pending_registrations > 0 && (
+            <Link to="/users" className="flex items-center justify-between gap-3 rounded-lg border border-cobalt/30 bg-cobalt-tint px-4 py-3 text-cobalt hover:underline">
+              <span className="font-semibold">{stats.data.pending_registrations} yeni kayıt onayınızı bekliyor.</span>
+              <span className="text-sm font-semibold">Personel sayfasında onaylayın →</span>
+            </Link>
+          )}
+          {stats.data.pending_password_requests > 0 && (
+            <Link to="/users" className="flex items-center justify-between gap-3 rounded-lg border border-warn/40 bg-warn-tint px-4 py-3 text-warn hover:underline">
+              <span className="font-semibold">{stats.data.pending_password_requests} kişi parolasını unuttuğunu bildirdi.</span>
+              <span className="text-sm font-semibold">Personel sayfasında geçici parola verin →</span>
+            </Link>
+          )}
           <InventoryComposition assets={stats.data.assets} />
           <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
             <AlertsSummary alerts={stats.data.alerts} />

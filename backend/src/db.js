@@ -8,10 +8,16 @@ types.setTypeParser(1082, (value) => value);
 // COUNT(*) gibi bigint sonuçları JS number'a çevrilir (bu uygulamada 2^53'ü aşmaz).
 types.setTypeParser(20, (value) => Number(value));
 
+// Oturum saat dilimi kurumun saat dilimine ayarlanır: current_date, ::date dönüşümleri ve
+// tarih filtreleri (ör. "teslim tarihi 14 Ekim") UTC'ye göre değil, kurum saatine göre hesaplanır.
+// Değer config'te doğrulanır (yalnızca harf, rakam, _ + - /); yine de güvenli tarafta kalmak için burada da süzülür.
+const safeTimezone = /^[A-Za-z0-9_+\-/]+$/.test(config.timezone) ? config.timezone : 'UTC';
+
 export const pool = new Pool({
   connectionString: config.databaseUrl,
   max: 10,
   idleTimeoutMillis: 30_000,
+  options: `-c timezone=${safeTimezone}`,
 });
 
 pool.on('error', (err) => {

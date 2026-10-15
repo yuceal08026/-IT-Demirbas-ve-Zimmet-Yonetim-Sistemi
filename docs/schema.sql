@@ -26,6 +26,7 @@ CREATE TABLE users (
     department_id  INT REFERENCES departments(id) ON DELETE SET NULL,
     is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
     token_version  INT          NOT NULL DEFAULT 0,
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE,  -- 005_password_change.sql
     created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
     updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now()
 );

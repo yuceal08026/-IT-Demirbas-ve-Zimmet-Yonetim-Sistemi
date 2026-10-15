@@ -18,3 +18,11 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Gizli anahtarlar, sertifikalar ve veritabanı yedekleri (repoya girmemeli)
+*.pem
+*.key
+*.p12
+*.dump
+*.backup
+backups/

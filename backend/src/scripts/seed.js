@@ -3,200 +3,164 @@ import { fileURLToPath } from 'node:url';
 import bcrypt from 'bcryptjs';
 import { config } from '../config.js';
 import { pool, withTransaction } from '../db.js';
-import { nextAssetCode } from '../services/assetCode.js';
+import { email as emailSchema } from '../middleware/validate.js';
+import { writeAudit } from '../utils/audit.js';
+import {
+  ADMIN_PASSWORD_MIN_LENGTH, KNOWN_WEAK_PASSWORDS, LEGACY_DEFAULT_ADMIN_PASSWORD, LEGACY_DEMO_PASSWORD, passwordProblem,
+} from '../utils/passwords.js';
 
 /**
- * İlk kurulum verisi.
- * 1) Hiç aktif yönetici yoksa SEED_ADMIN_* ile bir yönetici oluşturur.
- * 2) SEED_DEMO_DATA=true ise ve veritabanı boşsa örnek departman/personel/cihaz/zimmet ekler.
- * Tekrar çalıştırmak güvenlidir (idempotent): var olan veriye dokunmaz.
+ * İlk kurulum ve açılış güvenlik kontrolleri. Her açılışta güvenle tekrar çalışır (idempotent).
+ *
+ * Bu betik ÖRNEK (DEMO) VERİ YÜKLEMEZ. Departman, personel ve cihazlar yalnızca uygulama üzerinden eklenir.
+ *
+ * 1) Hiç aktif yönetici yoksa ve INITIAL_ADMIN_EMAIL + INITIAL_ADMIN_PASSWORD tanımlıysa ilk yöneticiyi oluşturur.
+ *    Tanımlı değilse hiçbir şey oluşturmaz; ilk yöneticinin nasıl oluşturulacağını loga yazar
+ *    (önerilen yöntem: npm run create-admin — parolayı ekranda göstermeden sorar).
+ * 2) Eski sürümlerden kalan bilinen varsayılan parolaları tespit eder (mevcut veriyi silmeden):
+ *    - Demo personel hesaplarının bilinen parolası (Personel123) geçersiz kılınır; hesaplar ve geçmişleri korunur.
+ *    - Varsayılan parolayı (Admin12345 vb.) kullanan aktif yönetici varsa: üretimde açılış durdurulur,
+ *      geliştirmede ilk girişte parola değişikliği zorunlu tutulur.
  */
 
 const env = process.env;
 
-async function seedAdmin(client, log) {
+// Eski sürümün SEED_DEMO_DATA=true ile oluşturduğu örnek personel hesapları.
+const LEGACY_DEMO_EMAILS = [
+  'ayse.yilmaz', 'mehmet.kaya', 'zeynep.demir', 'emre.celik', 'elif.sahin', 'burak.ozturk', 'selin.arslan',
+].map((m) => `${m}@kurum.local`);
+
+function readInitialAdminEnv(log) {
+  const pick = (name) => {
+    if (env[`INITIAL_ADMIN_${name}`]) return env[`INITIAL_ADMIN_${name}`];
+    if (env[`SEED_ADMIN_${name}`]) {
+      log(`[setup] Uyarı: SEED_ADMIN_${name} artık kullanılmıyor; INITIAL_ADMIN_${name} adını kullanın.`);
+      return env[`SEED_ADMIN_${name}`];
+    }
+    return '';
+  };
+  return { email: pick('EMAIL').trim(), password: pick('PASSWORD'), name: pick('NAME').trim() || 'Sistem Yöneticisi' };
+}
+
+async function createInitialAdmin(client, log) {
   const { rows } = await client.query("SELECT count(*) AS n FROM users WHERE role = 'ADMIN' AND is_active");
+  const { email, password, name } = readInitialAdminEnv(log);
+
   if (rows[0].n > 0) {
-    log('[seed] Aktif yönetici zaten var, atlandı.');
-    return null;
+    if (password) {
+      log('[setup] Uyarı: Aktif yönetici zaten var; INITIAL_ADMIN_PASSWORD kullanılmadı. '
+        + 'Güvenlik için bu değeri .env dosyanızdan silin.');
+    }
+    return { created: false, adminExists: true };
   }
 
-  const email = (env.SEED_ADMIN_EMAIL || 'admin@kurum.local').trim().toLowerCase();
-  const name = env.SEED_ADMIN_NAME || 'Sistem Yöneticisi';
-  let password = env.SEED_ADMIN_PASSWORD;
-  if (!password) {
-    if (config.isProduction) {
-      throw new Error('[seed] Üretim ortamında SEED_ADMIN_PASSWORD tanımlanmalıdır.');
-    }
-    password = crypto.randomBytes(9).toString('base64url') + '7';
-    log(`[seed] SEED_ADMIN_PASSWORD tanımlı değil; geçici parola üretildi (yalnızca bir kez gösterilir): ${password}`);
+  if (!email || !password) {
+    log('[setup] Sistemde aktif yönetici yok. İlk yöneticiyi oluşturmanın yolları:\n'
+      + '        1) Tarayıcıda uygulamayı açın; kurulum ekranı, API kayıtlarında yazan tek kullanımlık KURULUM KODUNU ister\n'
+      + '           (Docker: docker compose logs api).\n'
+      + '        2) Komutla: docker compose exec api npm run create-admin -- --email ad.soyad@kurum.gov.tr --name "Ad Soyad"\n'
+      + '        3) INITIAL_ADMIN_EMAIL ve INITIAL_ADMIN_PASSWORD tanımlayıp yeniden başlatın.');
+    return { created: false, adminExists: false };
+  }
+
+  const parsedEmail = emailSchema.safeParse(email);
+  if (!parsedEmail.success) throw new Error(`[setup] INITIAL_ADMIN_EMAIL geçerli bir e-posta adresi değil: ${email}`);
+  const problem = passwordProblem(password, { minLength: ADMIN_PASSWORD_MIN_LENGTH, email: parsedEmail.data });
+  if (problem) throw new Error(`[setup] INITIAL_ADMIN_PASSWORD kabul edilmedi: ${problem}. Yönetici oluşturulmadı.`);
+
+  const { rows: existing } = await client.query('SELECT id FROM users WHERE lower(email) = $1', [parsedEmail.data]);
+  if (existing[0]) {
+    // Var olan bir hesabı sessizce yöneticiye yükseltmek yetki yükseltme açığı olur; bunu yalnızca bilinçli CLI işlemi yapar.
+    throw new Error(`[setup] ${parsedEmail.data} adresiyle kayıtlı bir kullanıcı zaten var; otomatik olarak yönetici yapılmadı. `
+      + 'Bu hesabı yönetici yapmak için: npm run create-admin -- --email <adres> --reset');
   }
 
   const hash = await bcrypt.hash(password, config.bcryptRounds);
   const { rows: inserted } = await client.query(
-    `INSERT INTO users (ad_soyad, email, password_hash, role)
-     VALUES ($1, $2, $3, 'ADMIN')
-     ON CONFLICT ((lower(email))) DO UPDATE SET role = 'ADMIN', is_active = TRUE
-     RETURNING id`,
-    [name, email, hash],
+    `INSERT INTO users (ad_soyad, email, password_hash, role) VALUES ($1, $2, $3, 'ADMIN') RETURNING id`,
+    [name, parsedEmail.data, hash],
   );
-  log(`[seed] Yönetici hesabı hazır: ${email}`);
-  return inserted[0].id;
+  await writeAudit({
+    userId: null, action: 'USER_CREATE', entityType: 'USER', entityId: inserted[0].id,
+    details: { ad_soyad: name, email: parsedEmail.data, role: 'ADMIN', via: 'initial-setup' },
+  }, client);
+  log(`[setup] İlk yönetici hesabı oluşturuldu: ${parsedEmail.data}. Güvenlik için INITIAL_ADMIN_PASSWORD değerini .env dosyanızdan silin.`);
+  return { created: true, adminExists: true };
 }
 
-const DEPARTMENTS = ['Bilgi İşlem', 'İnsan Kaynakları', 'Muhasebe', 'Satın Alma', 'Hukuk Müşavirliği'];
-
-const PEOPLE = [
-  ['Ayşe Yılmaz', 'ayse.yilmaz', 'İnsan Kaynakları'],
-  ['Mehmet Kaya', 'mehmet.kaya', 'Muhasebe'],
-  ['Zeynep Demir', 'zeynep.demir', 'Satın Alma'],
-  ['Emre Çelik', 'emre.celik', 'Bilgi İşlem'],
-  ['Elif Şahin', 'elif.sahin', 'Hukuk Müşavirliği'],
-  ['Burak Öztürk', 'burak.ozturk', 'Muhasebe'],
-  ['Selin Arslan', 'selin.arslan', 'İnsan Kaynakları'],
-];
-
-// [kategori, marka, model, seri ön eki, alım (gün önce), garanti (yıl)]
-const ASSETS = [
-  ['Dizüstü Bilgisayar', 'Dell', 'Latitude 5440', 'DL5440', 420, 3],
-  ['Dizüstü Bilgisayar', 'Lenovo', 'ThinkPad T14 Gen 4', 'LNT14', 380, 3],
-  ['Dizüstü Bilgisayar', 'HP', 'EliteBook 840 G10', 'HP840', 1080, 3],
-  ['Dizüstü Bilgisayar', 'Apple', 'MacBook Air M3', 'MBA3', 200, 1],
-  ['Masaüstü Bilgisayar', 'Dell', 'OptiPlex 7010', 'DO7010', 700, 3],
-  ['Masaüstü Bilgisayar', 'HP', 'ProDesk 400 G9', 'HPD400', 1450, 3],
-  ['Masaüstü Bilgisayar', 'Lenovo', 'ThinkCentre M70q', 'LNM70', 90, 3],
-  ['Monitör', 'Dell', 'P2723D', 'DMP27', 500, 3],
-  ['Monitör', 'LG', '27UP850', 'LG27', 640, 2],
-  ['Monitör', 'Samsung', 'ViewFinity S6', 'SMS6', 1090, 3],
-  ['Monitör', 'Dell', 'U2424H', 'DMU24', 60, 3],
-  ['Sunucu', 'HPE', 'ProLiant DL380 Gen11', 'HPEDL', 900, 5],
-  ['Sunucu', 'Dell', 'PowerEdge R760', 'DPR760', 300, 5],
-  ['Yazıcı', 'HP', 'LaserJet Pro M404dn', 'HPLJ', 1800, 2],
-  ['Yazıcı', 'Brother', 'HL-L6410DN', 'BRHL', 340, 2],
-  ['Tablet', 'Apple', 'iPad 10. Nesil', 'IPAD10', 260, 1],
-  ['Tablet', 'Samsung', 'Galaxy Tab S9', 'SGTS9', 700, 2],
-  ['Ağ Cihazı', 'Cisco', 'Catalyst 9200L', 'CS9200', 1200, 5],
-  ['Projeksiyon', 'Epson', 'EB-L210W', 'EPEB', 1500, 2],
-  ['Dizüstü Bilgisayar', 'Lenovo', 'ThinkPad E14', 'LNE14', 1110, 3],
-];
-
-function daysAgo(n) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() - n);
-  return d;
+/** Eski demo hesaplarının herkesçe bilinen parolasını geçersiz kılar. Hesaplar, zimmetler ve geçmiş korunur. */
+async function invalidateLegacyDemoPasswords(client, log) {
+  const { rows } = await client.query(
+    'SELECT id, ad_soyad, email, password_hash FROM users WHERE lower(email) = ANY($1::text[])',
+    [LEGACY_DEMO_EMAILS],
+  );
+  let count = 0;
+  for (const u of rows) {
+    if (!(await bcrypt.compare(LEGACY_DEMO_PASSWORD, u.password_hash))) continue;
+    const unusable = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 4);
+    await client.query(
+      `UPDATE users SET password_hash = $1, must_change_password = TRUE, token_version = token_version + 1, updated_at = now()
+        WHERE id = $2`,
+      [unusable, u.id],
+    );
+    await writeAudit({
+      userId: null, action: 'USER_PASSWORD_RESET', entityType: 'USER', entityId: u.id,
+      details: { ad_soyad: u.ad_soyad, email: u.email, reason: 'legacy_demo_password_invalidated' },
+    }, client);
+    count += 1;
+  }
+  if (count) {
+    log(`[setup] Eski örnek veriden kalan ${count} demo hesabının bilinen parolası geçersiz kılındı. `
+      + 'Hesaplar ve geçmişleri silinmedi; gerekmiyorsa Personel ekranından pasife alabilirsiniz.');
+  }
+  return count;
 }
-const isoDay = (d) => d.toISOString().slice(0, 10);
 
-async function seedDemo(client, adminId, log) {
-  const { rows } = await client.query('SELECT count(*) AS n FROM departments');
-  if (rows[0].n > 0) {
-    log('[seed] Örnek veri zaten yüklü (departman tablosu dolu), atlandı.');
-    return;
-  }
-  const demoPassword = env.SEED_DEMO_PASSWORD || 'Personel123';
-  const hash = await bcrypt.hash(demoPassword, config.bcryptRounds);
-
-  const deptIds = {};
-  for (const name of DEPARTMENTS) {
-    const r = await client.query('INSERT INTO departments (name) VALUES ($1) RETURNING id', [name]);
-    deptIds[name] = r.rows[0].id;
-  }
-  if (adminId) await client.query('UPDATE users SET department_id = $1 WHERE id = $2', [deptIds['Bilgi İşlem'], adminId]);
-
-  const userIds = [];
-  for (const [name, mail, dept] of PEOPLE) {
-    const r = await client.query(
-      `INSERT INTO users (ad_soyad, email, password_hash, role, department_id)
-       VALUES ($1, $2, $3, 'USER', $4) ON CONFLICT DO NOTHING RETURNING id`,
-      [name, `${mail}@kurum.local`, hash, deptIds[dept]],
-    );
-    if (r.rows[0]) userIds.push(r.rows[0].id);
-  }
-
-  const assetIds = [];
-  for (const [i, [category, brand, model, prefix, ageDays, warrantyYears]] of ASSETS.entries()) {
-    const code = await nextAssetCode(client);
-    const purchase = daysAgo(ageDays);
-    const warranty = new Date(purchase);
-    warranty.setUTCFullYear(warranty.getUTCFullYear() + warrantyYears);
-    const createdAt = daysAgo(Math.min(ageDays, 400) - 1);
-    const r = await client.query(
-      `INSERT INTO assets (asset_code, category, brand, model, serial_number, purchase_date, warranty_end_date,
-                           status, status_changed_at, created_at, updated_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'IN_STOCK',$8,$8,$8) RETURNING id`,
-      [code, category, brand, model, `${prefix}-${String(48211 + i * 37).padStart(6, '0')}`,
-        isoDay(purchase), isoDay(warranty), createdAt],
-    );
-    assetIds.push(r.rows[0].id);
-    if (adminId) {
-      await client.query(
-        `INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, "timestamp", details)
-         VALUES ($1, 'ASSET_CREATE', 'ASSET', $2, $3, $4)`,
-        [adminId, r.rows[0].id, createdAt, { asset_code: code, brand, model, seed: true }],
-      );
+/** Bilinen/varsayılan parolayı kullanan aktif yöneticileri bulur. */
+async function findAdminsWithDefaultPassword(client) {
+  const { rows } = await client.query(
+    "SELECT id, email, password_hash, must_change_password FROM users WHERE role = 'ADMIN' AND is_active ORDER BY id LIMIT 50",
+  );
+  const candidates = [LEGACY_DEFAULT_ADMIN_PASSWORD, ...KNOWN_WEAK_PASSWORDS.filter((p) => p !== LEGACY_DEFAULT_ADMIN_PASSWORD)].slice(0, 4);
+  const found = [];
+  for (const u of rows) {
+    for (const pw of candidates) {
+      if (await bcrypt.compare(pw, u.password_hash)) { found.push(u); break; }
     }
   }
-
-  if (!adminId || userIds.length === 0) return;
-
-  // Bazı cihazlar personelde (aktif zimmet), biri geçmişte iade edilmiş, bazıları arızalı.
-  const plan = [
-    [0, 0, 120], [1, 1, 95], [2, 2, 300], [4, 3, 45], [7, 0, 120], [8, 4, 30],
-    [11, 3, 200], [15, 5, 12], [12, 3, 80], [3, 6, 20],
-  ];
-  for (const [assetIdx, userIdx, days] of plan) {
-    const at = daysAgo(days);
-    await client.query(
-      `INSERT INTO assignments (asset_id, user_id, assigned_by, assigned_at, note) VALUES ($1,$2,$3,$4,$5)`,
-      [assetIds[assetIdx], userIds[userIdx % userIds.length], adminId, at, 'Örnek veri'],
-    );
-    await client.query(`UPDATE assets SET status = 'ACTIVE', status_changed_at = $2 WHERE id = $1`, [assetIds[assetIdx], at]);
-    await client.query(
-      `INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, "timestamp", details)
-       VALUES ($1, 'ASSIGN', 'ASSET', $2, $3, $4)`,
-      [adminId, assetIds[assetIdx], at, { user_id: userIds[userIdx % userIds.length], user_name: PEOPLE[userIdx % userIds.length][0], seed: true }],
-    );
-  }
-
-  // Geçmiş (iade edilmiş) bir zimmet: cihaz 9 → 2. personel, sonra iade.
-  const out = daysAgo(260);
-  const back = daysAgo(190);
-  await client.query(
-    `INSERT INTO assignments (asset_id, user_id, assigned_by, assigned_at, note) VALUES ($1,$2,$3,$4,'Örnek veri')`,
-    [assetIds[9], userIds[1], adminId, out],
-  );
-  await client.query(
-    `UPDATE assignments SET returned_at = $1, returned_by = $2, return_note = 'Personel değişikliği'
-      WHERE asset_id = $3 AND returned_at IS NULL`,
-    [back, adminId, assetIds[9]],
-  );
-  await client.query(`UPDATE assets SET status_changed_at = $2 WHERE id = $1`, [assetIds[9], back]);
-  await client.query(
-    `INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, "timestamp", details)
-     VALUES ($1, 'ASSIGN', 'ASSET', $2, $3, $4), ($1, 'RETURN', 'ASSET', $2, $5, $6)`,
-    [adminId, assetIds[9], out, { user_id: userIds[1], user_name: PEOPLE[1][0], seed: true },
-      back, { user_id: userIds[1], user_name: PEOPLE[1][0], condition: 'IN_STOCK', return_note: 'Personel değişikliği', seed: true }],
-  );
-
-  for (const idx of [5, 13]) {
-    await client.query(`UPDATE assets SET status = 'DEFECTIVE', status_changed_at = $2 WHERE id = $1`, [assetIds[idx], daysAgo(15)]);
-    await client.query(
-      `INSERT INTO audit_logs (user_id, action_type, entity_type, entity_id, "timestamp", details)
-       VALUES ($1, 'ASSET_STATUS_CHANGE', 'ASSET', $2, $3, $4)`,
-      [adminId, assetIds[idx], daysAgo(15), { changes: { status: { from: 'IN_STOCK', to: 'DEFECTIVE' } }, note: 'Açılmıyor', seed: true }],
-    );
-  }
-
-  log(`[seed] Örnek veri yüklendi: ${DEPARTMENTS.length} departman, ${userIds.length} personel (parola: ${demoPassword}), ${assetIds.length} cihaz.`);
+  return found;
 }
 
-export async function runSeed({ log = console.log } = {}) {
-  await withTransaction(async (client) => {
-    const adminId = await seedAdmin(client, log);
-    if (env.SEED_DEMO_DATA === 'true') {
-      const { rows } = await client.query("SELECT id FROM users WHERE role = 'ADMIN' AND is_active ORDER BY id LIMIT 1");
-      await seedDemo(client, adminId ?? rows[0]?.id, log);
-    }
+async function guardDefaultAdminPasswords(client, log, { production }) {
+  const weak = await findAdminsWithDefaultPassword(client);
+  if (!weak.length) return 0;
+  const emails = weak.map((u) => u.email).join(', ');
+  if (production) {
+    throw new Error(`[setup] Güvenlik: şu yönetici hesapları bilinen/varsayılan bir parola kullanıyor: ${emails}. `
+      + 'Uygulama başlatılmadı. Parolayı değiştirmek için:\n'
+      + `        docker compose run --rm api npm run create-admin -- --email ${weak[0].email} --reset\n`
+      + '        (Veriler silinmez; yalnızca bu hesabın parolası değişir.)');
+  }
+  await client.query(
+    'UPDATE users SET must_change_password = TRUE, updated_at = now() WHERE id = ANY($1::int[]) AND NOT must_change_password',
+    [weak.map((u) => u.id)],
+  );
+  log(`[setup] Uyarı: ${emails} bilinen bir parola kullanıyor. İlk girişte parola değişikliği zorunlu tutulacak `
+    + '(üretim ortamında uygulama bu durumda başlamaz).');
+  return weak.length;
+}
+
+export async function runSeed({ log = console.log, production = config.isProduction } = {}) {
+  if (env.SEED_DEMO_DATA === 'true') {
+    log('[setup] Uyarı: SEED_DEMO_DATA artık desteklenmiyor ve yok sayıldı; örnek veri yüklenmez.');
+  }
+  return withTransaction(async (client) => {
+    // Aynı anda iki kopyanın ilk yönetici oluşturmasını engeller.
+    await client.query('SELECT pg_advisory_xact_lock(727002)');
+    const admin = await createInitialAdmin(client, log);
+    const demoInvalidated = await invalidateLegacyDemoPasswords(client, log);
+    const weakAdmins = await guardDefaultAdminPasswords(client, log, { production });
+    return { ...admin, demoInvalidated, weakAdmins };
   });
 }
 

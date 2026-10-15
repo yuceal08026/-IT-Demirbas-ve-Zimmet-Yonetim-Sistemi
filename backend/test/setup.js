@@ -10,10 +10,15 @@ process.env.JWT_SECRET = 'test-secret-'.padEnd(48, 'x');
 process.env.JWT_EXPIRES_IN = '1h';
 process.env.BCRYPT_ROUNDS = '4';
 process.env.APP_BASE_URL = 'http://zimmet.test';
-process.env.SEED_ADMIN_EMAIL = 'admin@test.local';
-process.env.SEED_ADMIN_PASSWORD = 'Admin12345';
-process.env.SEED_ADMIN_NAME = 'Test Yönetici';
-process.env.SEED_DEMO_DATA = 'false';
+// İlk yönetici, uygulamanın gerçek ilk kurulum yöntemiyle (INITIAL_ADMIN_*) oluşturulur. Örnek veri yoktur.
+process.env.INITIAL_ADMIN_EMAIL = 'admin@test.local';
+process.env.INITIAL_ADMIN_PASSWORD = 'Test-Yonetici-2026';
+process.env.INITIAL_ADMIN_NAME = 'Test Yönetici';
+delete process.env.SEED_ADMIN_EMAIL;
+delete process.env.SEED_ADMIN_PASSWORD;
+delete process.env.SEED_DEMO_DATA;
+process.env.APP_TIMEZONE = 'Europe/Istanbul';
+process.env.REGISTRATION_EMAIL_DOMAINS = 'uni.test.edu.tr';
 process.env.LOGIN_RATE_LIMIT_MAX = '5';
 
 if (!process.env.TEST_DATABASE_URL) {

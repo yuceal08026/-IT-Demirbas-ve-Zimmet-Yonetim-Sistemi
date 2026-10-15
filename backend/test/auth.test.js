@@ -1,4 +1,6 @@
-import { useTestServer, client, adminClient, createUserClient, query } from './helpers.js';
+import {
+  useTestServer, client, adminClient, createUserClient, query, ADMIN_PASSWORD,
+} from './helpers.js';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -7,7 +9,7 @@ useTestServer();
 describe('Kimlik doğrulama (Aşama 3, PRD §7)', () => {
   it('doğru bilgilerle giriş httpOnly + SameSite=Strict cookie verir, token gövdede dönmez', async () => {
     const c = client();
-    const r = await c.post('/api/auth/login', { email: 'ADMIN@test.local', password: 'Admin12345' });
+    const r = await c.post('/api/auth/login', { email: 'ADMIN@test.local', password: ADMIN_PASSWORD });
     assert.equal(r.status, 200);
     assert.equal(r.body.user.role, 'ADMIN');
     assert.equal(r.body.token, undefined);
@@ -79,7 +81,7 @@ describe('Kimlik doğrulama (Aşama 3, PRD §7)', () => {
 
   it('issueToken=true ile mobil istemci Bearer token alır ve kullanabilir', async () => {
     const c = client();
-    const r = await c.post('/api/auth/login', { email: 'admin@test.local', password: 'Admin12345', issueToken: true });
+    const r = await c.post('/api/auth/login', { email: 'admin@test.local', password: ADMIN_PASSWORD, issueToken: true });
     assert.ok(r.body.token);
     const m = client();
     m.setBearer(r.body.token);
