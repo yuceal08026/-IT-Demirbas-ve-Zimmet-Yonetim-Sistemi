@@ -7,3 +7,12 @@ export function parseDurationMs(value) {
   if (!match) throw new Error(`Geçersiz süre: ${value}`);
   return Number(match[1]) * UNITS[(match[2] || 's').toLowerCase()];
 }
+
+/**
+ * Verilen anın, verilen saat dilimindeki takvim yılı.
+ * new Date().getFullYear() sunucunun saat dilimini kullanır; konteyner UTC'de çalıştığı için
+ * 1 Ocak 00:00–03:00 (İstanbul) arasında önceki yılı döndürürdü.
+ */
+export function yearInTimezone(now, timeZone) {
+  return Number(new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric' }).format(now));
+}
