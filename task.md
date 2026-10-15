@@ -370,3 +370,9 @@ Her aşama bittiğinde doldur:
 - Yeni testler: `setup-security.test.js`, `password-change.test.js`, `integrity.test.js`.
 - Giriş ekranı: "Personel girişi" / "Yönetici girişi" sekmeleri (yanlış sekmede `WRONG_PORTAL`), "Şifremi unuttum" → yöneticiye talep (`006_password_reset_requests.sql`), tarayıcıdan ilk kurulum ekranı (sunucu kayıtlarındaki tek kullanımlık kodla). Test: `login-reset-setup.test.js`.
 - Kendi kendine kayıt (yalnızca kurum alan adı, yönetici onaylı) ve e-postasız parola kurtarma (kurtarma kodu) (`007_registration_recovery.sql`). Test: `register-recover.test.js`.
+
+### Aşama 9 (opsiyonel) — Mobil uygulama ve teslim sonrası düzeltmeler
+
+- **Tamamlanan:** `mobile/` Expo istemcisi (Bearer token + SecureStore, QR okutma, Zimmetlerim, yönetici için teslim/iade/arıza). Cihaz kodundaki yıl artık `APP_TIMEZONE`'a göre (`asset-code-year.test.js`). Kendi kendine kayıt varsayılan olarak kapalı. Frontend ve mobil için `node:test` birim testleri.
+- **Doğrulama:** Yeni birim testleri geçti (backend 3, frontend 14, mobil 9). Mobil kod esbuild ile derlenip içe aktarımları doğrulandı; gerçek cihazda deneme Expo Go ile yapılmalı.
+- **Kalan:** `package-lock.json` dosyalarının npm erişimi olan makinede üretilip commit edilmesi.
