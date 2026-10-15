@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Zimmet Saha",
+    "slug": "zimmet-saha",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "android": {
+      "package": "tr.zimmet.saha",
+      "permissions": ["android.permission.CAMERA"]
+    },
+    "ios": {
+      "bundleIdentifier": "tr.zimmet.saha",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Cihaz etiketlerindeki QR kodları okumak için kamera kullanılır."
+      }
+    },
+    "plugins": [
+      ["expo-camera", { "cameraPermission": "Cihaz etiketlerindeki QR kodları okumak için kamera kullanılır." }],
+      "expo-secure-store"
+    ]
+  }
+}
