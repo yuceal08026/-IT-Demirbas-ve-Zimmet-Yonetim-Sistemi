@@ -15,9 +15,13 @@ const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 let currentCode = null;
 
 function generateCode() {
-  const bytes = crypto.randomBytes(12);
-  const chars = [...bytes].map((b) => ALPHABET[b % ALPHABET.length]).join('');
-  return `${chars.slice(0, 4)}-${chars.slice(4, 8)}-${chars.slice(8, 12)}`;
+  const chars = [];
+  while (chars.length < 12) {
+    const b = crypto.randomBytes(1)[0];
+    // 256 sayısı 31'e tam bölünmez; 248 (= 31*8) ve üstü atılarak her karakterin olasılığı eşit tutulur.
+    if (b < 248) chars.push(ALPHABET[b % ALPHABET.length]);
+  }
+  return chars.join('').match(/.{4}/g).join('-');
 }
 
 const normalize = (code) => String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
