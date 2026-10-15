@@ -25,6 +25,10 @@ Kurumdaki bilişim donanımlarının (bilgisayar, monitör, sunucu vb.) envanter
 - Arıza ve bakım: kayıt açma, işleme alma, çözüm notuyla kapatma; cihaz başına çoklu kayıt.
 - Raporlar: envanter ve zimmet raporları, filtreli CSV (Excel'de doğrudan açılır); tarayıcıdan yazdır / PDF.
 
+**Mobil saha uygulaması (PRD §4.3)** — [mobile/README.md](mobile/README.md)
+- Expo (React Native): Bearer token ile güvenli giriş (token cihazın güvenli deposunda), kamerayla QR okutma, kişisel zimmet ekranı.
+- Yönetici için hızlı işlemler: teslim et, geri kabul et, arıza bildir.
+
 ## Teknolojiler
 
 | Katman | Seçim |
@@ -33,6 +37,7 @@ Kurumdaki bilişim donanımlarının (bilgisayar, monitör, sunucu vb.) envanter
 | Backend | Node.js 22, Express 5, zod (doğrulama), helmet, express-rate-limit, qrcode |
 | Veritabanı | PostgreSQL 16 (pg_trgm ile arama indeksi) |
 | Kimlik | JWT (HS256) + bcrypt |
+| Mobil | Expo (React Native), expo-camera, expo-secure-store |
 | Dağıtım | Docker Compose: `db` (postgres) + `api` (Node) + `web` (nginx: arayüz + `/api` ters vekil) |
 
 ```mermaid
@@ -189,7 +194,14 @@ TEST_DATABASE_URL=postgres://zimmet:<PAROLA>@localhost:5432/zimmet_test npm test
 | Dashboard sayılarının veritabanıyla tutarlılığı, uyarılar | `dashboard.test.js` |
 | Bakım, CSV raporları, gizli bilgi sızıntısı | `maintenance-reports.test.js` |
 
-Frontend için otomatik test yoktur (bkz. Bilinen notlar).
+| Cihaz kodundaki yılın kurum saat dilimine göre alınması (yılbaşı gecesi) | `asset-code-year.test.js` (veritabanı gerektirmez) |
+
+**Frontend ve mobil birim testleri** ek bağımlılık gerektirmez (`node:test`) ve veritabanı istemez:
+
+```bash
+cd frontend && npm test   # API istemcisi (hata kodları, 401/parola değişikliği yönlendirmesi, ağ hatası), tarih yardımcıları
+cd mobile && npm test     # QR içeriğinden cihaz kodu çözme, sunucu adresi, Bearer token, 401'de çıkış
+```
 
 ## Proje yapısı
 
@@ -208,11 +220,12 @@ Frontend için otomatik test yoktur (bkz. Bilinen notlar).
 │   ├── src/pages/          ekranlar
 │   ├── src/components/     Layout, tablo, modal, zimmet pencereleri, zaman çizelgesi…
 │   └── nginx.conf          üretimde arayüz + /api ters vekil
+├── mobile/                 Expo (React Native) saha uygulaması — bkz. mobile/README.md
 ├── docs/                   ERD, API, yetki haritası, güvenlik, ekran görüntüleri
 └── docker-compose.yml
 ```
 
-Klasör yapısı: monorepo aracı kullanılmadı. `backend/` ve `frontend/` kendi `package.json` dosyalarıyla bağımsız kurulur ve ayrı Docker imajı olarak derlenir.
+Klasör yapısı: monorepo aracı kullanılmadı. `backend/`, `frontend/` ve `mobile/` kendi `package.json` dosyalarıyla bağımsız kurulur; backend ve frontend ayrı Docker imajı olarak derlenir.
 
 ## Tasarım dokümanları
 
@@ -231,8 +244,8 @@ Klasör yapısı: monorepo aracı kullanılmadı. `backend/` ve `frontend/` kend
 
 ## Bilinen notlar
 
-- Depoda `package-lock.json` bulunmuyor. İlk `npm install` sonrasında oluşan `package-lock.json` dosyalarını commit etmeniz, sürümleri sabitlemek için önerilir. Dockerfile'lar lock dosyası varsa otomatik olarak `npm ci` kullanır.
+- Dockerfile'lar `package-lock.json` varsa birebir aynı sürümleri kurar (`npm ci`), yoksa `npm install` kullanır.
 - Ekran görüntülerindeki kişi ve cihaz adları temsilidir; uygulama bu kayıtları oluşturmaz.
-- Frontend için otomatik (birim/uçtan uca) test paketi henüz yok.
+- Frontend'de birim testleri var; tarayıcıda uçtan uca (E2E) test paketi yok.
 - PDF raporu ayrı bir kütüphaneyle değil, rapor sayfasının yazdırma görünümü ve tarayıcının "PDF olarak kaydet" seçeneğiyle alınır.
-- Mobil uygulama (PRD §4.3, opsiyonel Faz 3) bu teslimatta yok. API buna hazırdır: Bearer token desteği var ve QR kodu `/assets/code/:kod` adresine çözülür.
+- Mobil uygulama Expo Go ile geliştirme modunda çalışır; mağaza derlemesi (EAS Build) kapsam dışıdır. Mobildeki hızlı işlemler mevcut yetki modeline uygun olarak yalnızca yöneticide görünür.
