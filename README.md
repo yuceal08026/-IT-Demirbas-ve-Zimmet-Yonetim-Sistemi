@@ -78,7 +78,7 @@ docker compose logs api        # "Kurulum kodu:  XXXX-XXXX-XXXX" satırı
 ### Günlük kullanım
 
 - **Giriş ekranı** iki sekmelidir: **Personel girişi** ve **Yönetici girişi**. Yanlış sekmeden giren kişiye doğru sekme söylenir.
-- **Kendi kendine kayıt:** Personel girişindeki **Kaydolun** bağlantısıyla yalnızca kurum e-postası (`REGISTRATION_EMAIL_DOMAINS`, varsayılan `gop.edu.tr`) ile kayıt olunur. Hesap, yönetici **Personel** sayfasındaki "Onay bekleyen kayıtlar" bölümünden onaylayana kadar giriş yapamaz (Genel bakış'ta da uyarı çıkar). Kaydı kapatmak için `.env` içine `REGISTRATION_EMAIL_DOMAINS=` (boş) yazın.
+- **Kendi kendine kayıt:** Personel girişindeki **Kaydolun** bağlantısıyla yalnızca kurum e-postası ile kayıt olunur. Özellik varsayılan olarak **kapalıdır**; açmak için `.env` içine izin verilen alan adlarını yazın (örn. `REGISTRATION_EMAIL_DOMAINS=gop.edu.tr`). Hesap, yönetici **Personel** sayfasındaki "Onay bekleyen kayıtlar" bölümünden onaylayana kadar giriş yapamaz (Genel bakış'ta da uyarı çıkar). Değer boş bırakılırsa kayıt bağlantısı görünmez ve kullanıcıları yalnızca yönetici ekler.
 - **Kurtarma kodu (e-posta gerekmez):** Kayıt olan (ve ilk kurulumda yönetici olan) herkese bir kez **kurtarma kodu** gösterilir; indirilebilir. Yöneticinin eklediği kişiler kodu ilk parola değişikliğinde alır. Kod istenirse menüdeki **Kurtarma kodu** ile mevcut parolayla yenilenir (eskisi geçersiz olur).
 - **Şifremi unuttum:** Giriş ekranındaki bağlantıdan e-posta + kurtarma kodu + yeni parola yazılır; parolayı kişi kendisi yeniler, yönetici dahil herkes için aynıdır. Kod tek kullanımlıktır, kullanılınca yenisi verilir. Kodunu kaybeden kişi **Kurtarma kodum yok** ile yöneticiden yardım ister; talep Personel sayfasına düşer ve yönetici geçici parola verir.
 - **Parola değiştirme:** Herkes sol menünün altındaki **Parolamı değiştir** ile parolasını değiştirir.
@@ -123,7 +123,7 @@ Eski sürüm `.env` olmadan `Admin12345` yönetici parolası, `zimmet-local-dev`
 | `APP_TIMEZONE` | `Europe/Istanbul` | "Bugün" hesabı, tarih filtreleri, uyarılar ve CSV raporlarındaki saatler (eski adı `REPORT_TIMEZONE` da okunur). |
 | `TRUST_PROXY` | yerel/özel ağ | Express "trust proxy". Varsayılan yalnızca yerel/özel ağdaki vekillere (Docker içindeki nginx) güvenir. |
 | `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD` / `INITIAL_ADMIN_NAME` | *(boş)* | İsteğe bağlı ilk yönetici; yalnızca hiç aktif yönetici yokken kullanılır. Parola ≥ 12 karakter. |
-| `REGISTRATION_EMAIL_DOMAINS` | `gop.edu.tr` (compose) | Kendi kendine kayda izin verilen alan adları (virgülle). Boşsa kayıt kapalı. Kayıtlar yönetici onayı ister. |
+| `REGISTRATION_EMAIL_DOMAINS` | *(boş = kayıt kapalı)* | Kendi kendine kayda izin verilen alan adları (virgülle). Boşsa kayıt kapalı. Kayıtlar yönetici onayı ister. |
 | `ALERT_WARRANTY_DAYS` / `ALERT_IDLE_DAYS` / `ALERT_DEFECTIVE_DAYS` | `60` / `90` / `30` | Uyarı eşikleri (gün). |
 | `WEB_PORT` | `8080` | Uygulamanın açılacağı port. |
 

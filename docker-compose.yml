@@ -37,8 +37,8 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       TRUST_PROXY: ${TRUST_PROXY:-}
       # Kendi kendine kayıt: yalnızca bu alan adlarındaki e-postalar kaydolabilir (yönetici onayıyla).
-      # Kaydı kapatmak için .env içine boş değer yazın: REGISTRATION_EMAIL_DOMAINS=
-      REGISTRATION_EMAIL_DOMAINS: ${REGISTRATION_EMAIL_DOMAINS-gop.edu.tr}
+      # Varsayılan boş = kayıt kapalı. Açmak için .env içine örn. REGISTRATION_EMAIL_DOMAINS=gop.edu.tr yazın.
+      REGISTRATION_EMAIL_DOMAINS: ${REGISTRATION_EMAIL_DOMAINS:-}
       # İsteğe bağlı: ilk yönetici (yalnızca hiç aktif yönetici yokken bir kez kullanılır). Önerilen yöntem create-admin komutudur.
       INITIAL_ADMIN_EMAIL: ${INITIAL_ADMIN_EMAIL:-}
       INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
